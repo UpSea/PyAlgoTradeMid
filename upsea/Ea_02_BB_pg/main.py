@@ -17,18 +17,18 @@ class eaController():
         self.timeFrom = timeFrom
         self.timeTo = timeTo
         self.phases = phases
-        self.ea = self.getEa()
     def run(self):
-        self.results = self.runByPhase(self.timeFrom,self.timeTo,self.phases)
+        ea = self.getEa()
+        results = self.runByPhase(self.timeFrom,self.timeTo,self.phases,ea)
     
     
         print  "------------------------"
         print self.timeFrom,' to ',self.timeTo
         print  "------------------------"
 
-        for result in self.results:
+        for result in results:
             print result         
-    def runByPhase(self,timeFrom,timeTo,phases):
+    def runByPhase(self,timeFrom,timeTo,phases,ea):
         #mid str to pyTimeStamp
         timeStampFrom = int(time.mktime(time.strptime(timeFrom, "%Y-%m-%d %H:%M:%S")))
         timeStampTo   = int(time.mktime(time.strptime(timeTo, "%Y-%m-%d %H:%M:%S")))    
@@ -37,8 +37,7 @@ class eaController():
         interval = (timeStampTo - timeStampFrom)/phases
         
         startTimeStamp = timeStampFrom
-        self.results01 = []
-        self.results02 = []
+        results = []
         for index in range(phases):
             endTimeStamp = startTimeStamp + interval
             
@@ -55,15 +54,14 @@ class eaController():
             timeTo = dt.datetime.strptime(timeTo,'%Y-%m-%d %H:%M:%S')              
             
             '''
-            result01 = self.ea.run(timeFrom = timeFromDatetime,timeTo = timeToDatetime)
-            self.results01.append(result01)
+            result01 = ea.run(timeFrom = timeFromDatetime,timeTo = timeToDatetime)
+        
+            result02 = ea.summary() 
             
-            result02 = self.ea.summary() 
-            self.results02.append(result02)
+            results.append(result02)
             
             startTimeStamp = endTimeStamp
-            
-        return self.results02
+        return results
     def getEa(self):    
         '''mid
         mid dataProvider = tushare|mt5|yahoo|generic
@@ -93,7 +91,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)    
     startRun = time.clock()
     
-    eaController('2016-05-20 00:00:00', '2016-05-30 00:00:00', 2).run()
+    eaController('2016-05-05 00:00:00', '2016-05-30 00:00:00', 5).run()
     
     endRun = time.clock()
     print "run time: %f s" % (endRun - startRun)       

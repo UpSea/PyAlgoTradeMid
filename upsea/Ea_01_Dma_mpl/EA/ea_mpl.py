@@ -2,13 +2,11 @@
 import os,sys
 from pyalgotrade import plotter
 
-from .dma_crossover import cross as cross
-
 dataRoot = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,os.pardir,os.pardir,'midProjects','histdata'))        
 sys.path.append(dataRoot)        
 
 import dataCenter as dataCenter 
-import dma_crossover as dma_crossover
+import Dma_crossover as dma_crossover
 class Expert():
     def __init__(self,toPlot = True,instruments = [],shortPeriod = 20,longPeriod = 40,dataProvider = 'tushare',storageType = 'mongodb',period = 'D',toYear = '',fromYear='',money = None):
         self.instrument = instruments[0]

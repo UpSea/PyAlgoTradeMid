@@ -32,9 +32,8 @@ class Expert():
         self.feed = feeds[self.instrument]
 
         #mid strategy
-        #dma_crossover.DMACrossOver(feeds=self.feed, instrument=self.instrument,money=self.money)
-        self.strat = dma_crossover.DMACrossOver(feeds=self.feed, instrument=self.instrument,money=self.money)
-        self.strat.initIndicators(shortPeriod=20, longPeriod=40)
+        self.strat = dma_crossover.DMACrossOver(feed=self.feed, instrument=self.instrument,shortPeriod=self.shortPeriod,
+                                                longPeriod=self.longPeriod,money=self.money)
         #self.strat.setUseAdjustedValues(False)
         
         #mid results
