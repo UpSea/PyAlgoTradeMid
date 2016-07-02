@@ -82,7 +82,7 @@ class eaController():
         #money = moneyFirst.moneyFirst()
         money = moneySecond.moneySecond()  
             
-        ea = Ea.Expert(toPlot=False,  shortPeriod=10,longPeriod=20, 
+        ea = Ea.Expert(toPlot=True,  shortPeriod=10,longPeriod=20, 
                       dataProvider = 'mt5',storageType = 'csv',period = 'm5',
                       instruments=instruments,money = money)    
         return ea        
