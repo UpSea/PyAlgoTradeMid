@@ -91,7 +91,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)    
     startRun = time.clock()
     
-    eaController('2016-05-05 00:00:00', '2016-05-30 00:00:00', 5).run()
+    eaController('2016-05-20 00:00:00', '2016-05-30 00:00:00', 2).run()
     
     endRun = time.clock()
     print "run time: %f s" % (endRun - startRun)       

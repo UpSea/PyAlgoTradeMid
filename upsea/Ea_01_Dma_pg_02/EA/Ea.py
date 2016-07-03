@@ -1,47 +1,53 @@
 # -*- coding: utf-8 -*-
 import os,sys
 from PyQt4 import QtGui,QtCore
-import pandas as pd
-
 #mid 1)dataCenter
-dataRoot = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,'histdata'))        
+dataRoot = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,os.pardir,os.pardir,'midProjects','histdata'))        
 sys.path.append(dataRoot)        
-import dataCenter as dataCenter 
-#mid 2)graphOutput
 xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,'histdataUI'))
-sys.path.append(xpower)        
-from Analyzers.Analyzer05 import Analyzer05#from BollingerBands import BBands
-#mid 3)strategy
-import strategies.dma_crossover_rev as dma_crossover_rev
-#mid 4)money
-import money.moneyFixed as moneyFixed
-import money.moneyFirst as moneyFirst
-import money.moneySecond as moneySecond
+sys.path.append(xpower)   
 
+import dataCenter as dataCenter 
+from Analyzer import Analyzer
+import Dma_crossover as dma_crossover
 class Expert():
     def __init__(self,toPlot = True,instruments = [],shortPeriod = 20,longPeriod = 40,dataProvider = 'tushare',
-                 storageType = 'mongodb',period = 'D',toYear = '',fromYear='',money = None):
+                 storageType = 'mongodb',period = 'D',money = None):
+        self.instruments = instruments
         self.instrument = instruments[0]
         self.shortPeriod = shortPeriod
         self.longPeriod = longPeriod
-        self.toPlot = toPlot
-        
-        #mid data
-        self.dataCenter = dataCenter.dataCenter()           
-        #mid dataProvider = tushareCsv|tushare|yahooCsv|yahoo|generic
-        feeds = self.dataCenter.getFeedsForPAT(dataProvider = dataProvider,storageType = storageType,instruments = instruments,period=period,
-                                                   toYear = toYear,fromYear=fromYear)
-        self.feed = feeds[self.instrument]
-        #mid money
+        self.dataProvider = dataProvider
+        self.storageType = storageType
+        self.period = period
+        self.toPlot = toPlot        
         self.money = money
-        
+        self.analyzers = []     #mid every ea has many windows which should be kept separatly,other wise previous one will be release after new one constructed. 
+    def run(self,timeFrom = None,timeTo = None):
+        self.timeFrom = timeFrom
+        self.timeTo = timeTo        
+        self.dataCenter = dataCenter.dataCenter()           
+        feeds = self.dataCenter.getFeedsForPAT(dataProvider = self.dataProvider,storageType = self.storageType,instruments = self.instruments,
+                                               period=self.period,timeTo = timeTo,timeFrom=timeFrom)
+        self.feed = feeds[self.instrument]
+
         #mid strategy
-        self.strat = dma_crossover_rev.DMACrossOverRev(feed=self.feed, instrument=self.instrument,shortPeriod=self.shortPeriod,
-                                                longPeriod=self.longPeriod,money=money)
+        #dma_crossover.DMACrossOver(feeds=self.feed, instrument=self.instrument,money=self.money)
+        self.strat = dma_crossover.DMACrossOver(feeds=self.feed, instrument=self.instrument,money=self.money)
+        self.strat.initIndicators(shortPeriod=20, longPeriod=40)
         #self.strat.setUseAdjustedValues(False)
         
         #mid results
-        self.initAnalyzer()
+        self.initAnalyzer()        
+        result = self.strat.run()
+        if(self.toPlot):
+            analyzer = Analyzer(Globals=[]) 
+            dataForCandle = dataCenter.getCandleData(dataProvider = self.dataProvider,dataStorage = self.storageType,dataPeriod = self.period,
+                                                    symbol = self.instrument,dateStart=timeFrom,dateEnd = timeTo)     
+            analyzer.analyze(result,dataForCandle)        
+            self.analyzers.append(analyzer)
+        
+        return result        
     def initAnalyzer(self):
         from pyalgotrade.stratanalyzer import sharpe
         from pyalgotrade.stratanalyzer import returns
@@ -61,13 +67,20 @@ class Expert():
         self.strat.attachAnalyzer(self.tradesAnalyzer)   
         self.strat.attachAnalyzer(self.drawdownAnalyzer)
     #----------------------------------------------------------------------
-    def printStats(self):
+    def summary(self):
+        return "from %s to %s:returns:%.2f%%,sharpe:%.2f,MaxDrawdown:%.2f%%,Longest drawdown duration:(%s)" % (str(self.timeFrom),str(self.timeTo),
+                                                                                                            self.returnsAnalyzer.getCumulativeReturns()[-1] * 100,
+                                                                                                            self.sharpeRatioAnalyzer.getSharpeRatio(0.05),
+                                                                                                            self.drawdownAnalyzer.getMaxDrawDown() * 100,
+                                                                                                            self.drawdownAnalyzer.getLongestDrawDownDuration())
+    def detail(self):
         """"""        
+        print "-------------------------------------------------------------------------"
         print "Final portfolio value: $%.2f" % self.strat.getResult()
         print "Cumulative returns: %.2f %%" % (self.returnsAnalyzer.getCumulativeReturns()[-1] * 100)
         print "Sharpe ratio: %.2f" % (self.sharpeRatioAnalyzer.getSharpeRatio(0.05))
         print "Max. drawdown: %.2f %%" % (self.drawdownAnalyzer.getMaxDrawDown() * 100)
-        print "Longest drawdown duration: %s" % (self.drawdownAnalyzer.getLongestDrawDownDuration())
+        print "Longest drawdown duration: (%s)" % (self.drawdownAnalyzer.getLongestDrawDownDuration())
         
         print
         print "Total trades: %d" % (self.tradesAnalyzer.getCount())
@@ -109,67 +122,5 @@ class Expert():
             print "Avg. return: %2.f %%" % (returns.mean() * 100)
             print "Returns std. dev.: %2.f %%" % (returns.std() * 100)
             print "Max. return: %2.f %%" % (returns.max() * 100)
-            print "Min. return: %2.f %%" % (returns.min() * 100)        
-    def run(self):
-        result = self.strat.run()
-        return result
-
-if __name__ == "__main__": 
-
-    app = QtGui.QApplication(sys.argv)
-    #----------------------------------------------------------------------------------------------------
-    symbol = '600701'
-    instruments = [symbol]
-    dataForCandle = dataCenter.getCandleData(symbol = symbol)     
-    
-    #mid ea01
-    money = moneyFixed.moneyFixed()
-    money = moneyFirst.moneyFirst()
-    '''mid
-    mid dataProvider = tushare|yahoo|generic
-    mid storageType = csv|mongodb
-    mid period 数据类型，D=日k线 W=周 M=月 m5=5分钟 m15=15分钟 m30=30分钟 h1=60分钟，默认为D
-    '''    
-    ex01 = Expert(toPlot=False,  shortPeriod=20,longPeriod=30, 
-                dataProvider = 'tushare',storageType = 'mongodb',period = 'D',
-                instruments=instruments,money = money,
-                fromYear = 2014,toYear=2016)
-    result01 = ex01.run()
-    #mid ea02
-    analyzer = Analyzer05(Globals=[]) 
-
-    analyzer.analyze(result01,dataForCandle)
-
-    ex01.printStats()    
-    
-    
-    #mid 3a03
-    # ---------------------------------------------------------------------------------------------------
-    sys.exit(app.exec_())  
-    '''
-
-    money = moneyFixed.moneyFixed()
-    ex = Expert(toPlot=True, instrument='000001SZ', shortPeriod=20, 
-               longPeriod=40, feedFormat='generic',
-               money = money)
-    ex.run()
-
-    money = moneyFixed.moneyFixed()
-    ex = Expert(toPlot=True, instrument='AAPL', shortPeriod=20, 
-               longPeriod=40, feedFormat='yahoo',
-               money = money)
-    ex.run()
-    money = moneyFixed.moneyFixed()
-    ex = Expert(toPlot=True, instrument='AAPL', shortPeriod=20, 
-               longPeriod=40, feedFormat='yahooCsv',
-               money = money)
-    ex.run()
-
-    
-    money = moneyFixed.moneyFixed()
-    ex = Expert(toPlot=True, instrument='600243', shortPeriod=20, 
-               longPeriod=40, feedFormat='tushareCsv',
-               money = money)
-    ex.run()        
-    
-    '''
+            print "Min. return: %2.f %%" % (returns.min() * 100)    
+        print "-------------------------------------------------------------------------"

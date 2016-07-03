@@ -34,7 +34,7 @@ class DMACrossOver(strategy.BacktestingStrategy):
   #mid 1)
   dataSeries = feed[instrument]
   dataSeries.setMaxLen(mid_DEFAULT_MAX_LEN)
-  closeSeries = dataSeries.getOpenDataSeries()
+  closeSeries = dataSeries.getCloseDataSeries()
   #mid 2)
   prices = closeSeries
   prices.setMaxLen(mid_DEFAULT_MAX_LEN)
