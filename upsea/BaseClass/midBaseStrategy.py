@@ -7,7 +7,22 @@ from pyalgotrade.dataseries import DEFAULT_MAX_LEN
 import pandas as pd
 
 class midBaseStrategy(strategy.BacktestingStrategy):
-    def __init__(self, feeds = None, instrument = '',money = None,longAllowed=True,shortAllowed=True):
+    def getFeeds(self,timeFrom=None,timeTo=None):
+        import os,sys        
+        xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,os.pardir,'midProjects','histdata'))
+        sys.path.append(xpower)
+        
+        import dataCenter as dataCenter            
+        self.dataCenter = dataCenter.dataCenter()           
+        feeds = self.dataCenter.getFeedsForPAT(dataProvider = self.dataProvider,storageType = self.storageType,instruments = self.instruments,
+                                               period=self.period,timeTo = timeTo,timeFrom=timeFrom)        
+        return feeds       
+    def initEa(self,timeFrom=None,timeTo=None):
+        
+        feeds = self.getFeeds(timeFrom = timeFrom,timeTo = timeTo)
+        
+        instrument = self.instrument
+        
         strategy.BacktestingStrategy.__init__(self, feeds[instrument])
         self.mid_DEFAULT_MAX_LEN = 10 * DEFAULT_MAX_LEN
         
@@ -26,15 +41,15 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.closePrices = prices
 
         #mid follow vars will be used in subclass
+        self.timeFrom = timeFrom
+        self.timeTo = timeTo
+        
         self.instrument = instrument
         self.longPosition = None
         self.shortPosition = None
         self.buySignal = False
         self.sellSignal = False
-        self.money = money
-        self.longAllowed = True
-        self.shortAllowed = True 
-        
+
         #mid follow vars will be used only this class
         self.__curPositionCost = 0  #mid init position value
         mid_DEFAULT_MAX_LEN = self.mid_DEFAULT_MAX_LEN
@@ -43,7 +58,7 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.__position_pnl = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)   #mid 当前持有头寸价值
         self.__portfolio_value = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
         self.__buy = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
-        self.__sell = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+        self.__sell = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)        
     def getAssetStructure(self):
         #mid --------------------------------
         #mid 当前账户资产结构如下方式获取
@@ -254,15 +269,14 @@ class midBaseStrategy(strategy.BacktestingStrategy):
                       (shares,shares*self.getLastPrice(self.instrument),self.getBroker().getCash() ))                                    
             self.shortPosition = self.enterShort(self.instrument, shares, True)
     def run(self,timeFrom = None,timeTo = None):
+        self.initEa(timeFrom = timeFrom,timeTo = timeTo)
+        
         self.initIndicators()
         #self.strat.setUseAdjustedValues(False)
         
         self.initAnalyzer()      
         
         strategy.BacktestingStrategy.run(self)
-        
-        self.timeFrom = timeFrom
-        self.timeTo = timeTo   
         
         buy = self.getBuy()
         sell = self.getSell()

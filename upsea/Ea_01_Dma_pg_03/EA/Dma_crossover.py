@@ -3,6 +3,8 @@ from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
 import sys,os
 import pandas as pd
+import time as time
+import datetime as dt
 
 xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,'BaseClass'))
 sys.path.append(xpower)
@@ -12,26 +14,30 @@ xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.par
 sys.path.append(xpower)
 
 import dataCenter as dataCenter  
-
+#mid 3)money
+dataRoot = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir))        
+sys.path.append(dataRoot)
+import money.moneyFixed  as moneyFixed
+import money.moneyFirst  as moneyFirst
+import money.moneySecond as moneySecond
+  
 class DMACrossOver(midBaseStrategy):
-    def __init__(self,toPlot = True,instruments = [],shortPeriod = 20,longPeriod = 40,dataProvider = 'tushare',
-                 storageType = 'mongodb',period = 'D',feeds = None,money = None):    
-        
+    def __init__(self):    
+        #mid 子类中定义，父类中使用
+        self.instruments = ['XAUUSD']        
+        self.shortPeriod = 10
+        self.longPeriod = 20
+        self.dataProvider = 'mt5'
+        self.storageType = 'csv'
+        self.period = 'm5'
+        self.toPlot = True   
+        self.money = moneySecond.moneySecond()  
+        self.longAllowed = True
+        self.shortAllowed = True 
+        self.analyzers = []              
 
-        self.instruments = instruments
-        self.instrument = instruments[0]
-        self.shortPeriod = shortPeriod
-        self.longPeriod = longPeriod
-        self.dataProvider = dataProvider
-        self.storageType = storageType
-        self.period = period
-        self.toPlot = toPlot        
-        self.money = money
-        self.analyzers = []     #mid every ea has many windows which should be kept separatly,other wise previous one will be release after new one constructed. 
-        
-        
-        midBaseStrategy.__init__(self,feeds = feeds, instrument = instruments[0],money = money,longAllowed=True,shortAllowed=True)
-        
+        self.instrument = self.instruments[0]
+        #mid 只在子类中使用
     def initIndicators(self):
         #mid 3)
         shortPeriod=20
@@ -66,8 +72,3 @@ class DMACrossOver(midBaseStrategy):
         self.closePosition()
         self.openPosition()
         self.recordPositions()      
-        
-
-
-    
-      
