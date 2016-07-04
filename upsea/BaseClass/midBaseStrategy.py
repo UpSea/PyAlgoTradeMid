@@ -8,7 +8,7 @@ import pandas as pd
 
 class midBaseStrategy(strategy.BacktestingStrategy):
     def __init__(self, feeds = None, instrument = '',money = None,longAllowed=True,shortAllowed=True):
-        strategy.BacktestingStrategy.__init__(self, feeds)
+        strategy.BacktestingStrategy.__init__(self, feeds[instrument])
         self.mid_DEFAULT_MAX_LEN = 10 * DEFAULT_MAX_LEN
         
         
@@ -16,7 +16,8 @@ class midBaseStrategy(strategy.BacktestingStrategy):
     
         #mid 计算ma将使用当天的收盘价格计算
         #mid 1)
-        dataSeries = feeds[instrument]
+        feed = feeds[instrument] 
+        dataSeries = feed[instrument]
         dataSeries.setMaxLen(mid_DEFAULT_MAX_LEN)       
         closeSeries = dataSeries.getCloseDataSeries()
         #mid 2)
@@ -252,9 +253,17 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.info("onBars().Status info,before enterShort(), SHORT POSITION to open %.2f,need amount: %.2f,available amount: %.2f." % 
                       (shares,shares*self.getLastPrice(self.instrument),self.getBroker().getCash() ))                                    
             self.shortPosition = self.enterShort(self.instrument, shares, True)
-    def run(self):
+    def run(self,timeFrom = None,timeTo = None):
+        self.initIndicators()
+        #self.strat.setUseAdjustedValues(False)
+        
+        self.initAnalyzer()      
+        
         strategy.BacktestingStrategy.run(self)
-
+        
+        self.timeFrom = timeFrom
+        self.timeTo = timeTo   
+        
         buy = self.getBuy()
         sell = self.getSell()
 
@@ -263,9 +272,96 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         position_cost = self.getPositionCost()
         position_pnl = self.getPositionPnl()
 
-        result = pd.DataFrame({'position_volume':list(position_volume),'position_cost':list(position_cost),
+        self.result = pd.DataFrame({'position_volume':list(position_volume),'position_cost':list(position_cost),
                                'position_pnl':list(position_pnl),
                                'buy':list(buy),'sell':list(sell),'portfolio_value':list(portfolio_value)},
                               columns=['position_volume','position_cost','position_pnl','buy','sell','portfolio_value'],
-                              index=position_volume.getDateTimes())        
-        return result
+                              index=position_volume.getDateTimes())
+        
+        
+        
+        self.addIndicators()
+        #------------------------------------
+    
+        if(self.toPlot):
+            self.analise()
+            
+            
+        return self.result            
+    #mid from ea
+    #----------------------------------------------------------------------
+    def summary(self):
+        return "from %s to %s:returns:%.2f%%,sharpe:%.2f,MaxDrawdown:%.2f%%,Longest drawdown duration:(%s)" % (str(self.timeFrom),str(self.timeTo),
+                                                                                                               self.returnsAnalyzer.getCumulativeReturns()[-1] * 100,
+                                                                                                               self.sharpeRatioAnalyzer.getSharpeRatio(0.05),
+                                                                                                               self.drawdownAnalyzer.getMaxDrawDown() * 100,
+                                                                                                               self.drawdownAnalyzer.getLongestDrawDownDuration())
+    def detail(self):
+        """"""        
+        print "-------------------------------------------------------------------------"
+        print "Final portfolio value: $%.2f" % self.getResult()
+        print "Cumulative returns: %.2f %%" % (self.returnsAnalyzer.getCumulativeReturns()[-1] * 100)
+        print "Sharpe ratio: %.2f" % (self.sharpeRatioAnalyzer.getSharpeRatio(0.05))
+        print "Max. drawdown: %.2f %%" % (self.drawdownAnalyzer.getMaxDrawDown() * 100)
+        print "Longest drawdown duration: (%s)" % (self.drawdownAnalyzer.getLongestDrawDownDuration())
+
+        print
+        print "Total trades: %d" % (self.tradesAnalyzer.getCount())
+        if self.tradesAnalyzer.getCount() > 0:
+            profits = self.tradesAnalyzer.getAll()
+            print "Avg. profit: $%2.f" % (profits.mean())
+            print "Profits std. dev.: $%2.f" % (profits.std())
+            print "Max. profit: $%2.f" % (profits.max())
+            print "Min. profit: $%2.f" % (profits.min())
+            returns = self.tradesAnalyzer.getAllReturns()
+            print "Avg. return: %2.f %%" % (returns.mean() * 100)
+            print "Returns std. dev.: %2.f %%" % (returns.std() * 100)
+            print "Max. return: %2.f %%" % (returns.max() * 100)
+            print "Min. return: %2.f %%" % (returns.min() * 100)
+
+        print
+        print "Profitable trades: %d" % (self.tradesAnalyzer.getProfitableCount())
+        if self.tradesAnalyzer.getProfitableCount() > 0:
+            profits = self.tradesAnalyzer.getProfits()
+            print "Avg. profit: $%2.f" % (profits.mean())
+            print "Profits std. dev.: $%2.f" % (profits.std())
+            print "Max. profit: $%2.f" % (profits.max())
+            print "Min. profit: $%2.f" % (profits.min())
+            returns = self.tradesAnalyzer.getPositiveReturns()
+            print "Avg. return: %2.f %%" % (returns.mean() * 100)
+            print "Returns std. dev.: %2.f %%" % (returns.std() * 100)
+            print "Max. return: %2.f %%" % (returns.max() * 100)
+            print "Min. return: %2.f %%" % (returns.min() * 100)
+
+        print
+        print "Unprofitable trades: %d" % (self.tradesAnalyzer.getUnprofitableCount())
+        if self.tradesAnalyzer.getUnprofitableCount() > 0:
+            losses = self.tradesAnalyzer.getLosses()
+            print "Avg. loss: $%2.f" % (losses.mean())
+            print "Losses std. dev.: $%2.f" % (losses.std())
+            print "Max. loss: $%2.f" % (losses.min())
+            print "Min. loss: $%2.f" % (losses.max())
+            returns = self.tradesAnalyzer.getNegativeReturns()
+            print "Avg. return: %2.f %%" % (returns.mean() * 100)
+            print "Returns std. dev.: %2.f %%" % (returns.std() * 100)
+            print "Max. return: %2.f %%" % (returns.max() * 100)
+            print "Min. return: %2.f %%" % (returns.min() * 100)    
+        print "-------------------------------------------------------------------------"
+    def initAnalyzer(self):
+        from pyalgotrade.stratanalyzer import sharpe
+        from pyalgotrade.stratanalyzer import returns
+        from pyalgotrade.stratanalyzer import drawdown
+        from pyalgotrade.stratanalyzer import trades        
+        # 1.0) 策略结果
+        self.returnsAnalyzer = returns.Returns()
+        # 1.1) 夏普比率 
+        self.sharpeRatioAnalyzer = sharpe.SharpeRatio()
+        # 1.2) 
+        self.drawdownAnalyzer = drawdown.DrawDown()
+        # 1.3)
+        self.tradesAnalyzer = trades.Trades()     
+        
+        self.attachAnalyzer(self.sharpeRatioAnalyzer)
+        self.attachAnalyzer(self.returnsAnalyzer)    
+        self.attachAnalyzer(self.tradesAnalyzer)   
+        self.attachAnalyzer(self.drawdownAnalyzer)    

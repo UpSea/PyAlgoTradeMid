@@ -10,14 +10,23 @@ sys.path.append(dataRoot)
 import money.moneyFixed  as moneyFixed
 import money.moneyFirst  as moneyFirst
 import money.moneySecond as moneySecond
-import EA.Ea             as Ea
+import EA.Dma_crossover  as Dma_crossover
  
 class eaController():
-    def __init__(self,timeFrom,timeTo,phases):
+    def __init__(self,timeFrom,timeTo,phases,toPlot):
         self.timeFrom = timeFrom
         self.timeTo = timeTo
         self.phases = phases
-        self.ea = self.getEa()
+
+        self.instruments = ['XAUUSD']        
+        self.shortPeriod = 10
+        self.longPeriod = 20
+        self.dataProvider = 'mt5'
+        self.storageType = 'csv'
+        self.period = 'm5'
+        self.toPlot = toPlot        
+        self.money = moneySecond.moneySecond()  
+        self.analyzers = []             
     def run(self):
         self.results = self.runByPhase(self.timeFrom,self.timeTo,self.phases)
         print  "------------------------"
@@ -42,37 +51,35 @@ class eaController():
             #mid pyTimeStamp to datetime
             timeFromDatetime = dt.datetime.utcfromtimestamp(startTimeStamp)
             timeToDatetime = dt.datetime.utcfromtimestamp(endTimeStamp)
-            '''
-            #mid pyTimeStamp to datetime to str
-            timeFrom = dt.datetime.utcfromtimestamp(startTimeStamp).strftime("%Y-%m-%d %H:%M:%S")
-            timeTo = dt.datetime.utcfromtimestamp(endTimeStamp).strftime("%Y-%m-%d %H:%M:%S")
             
-            #mid str to datetime
-            timeFrom = dt.datetime.strptime(timeFrom,'%Y-%m-%d %H:%M:%S')    
-            timeTo = dt.datetime.strptime(timeTo,'%Y-%m-%d %H:%M:%S')              
+            feeds = self.getFeeds(timeFrom = timeFromDatetime,timeTo = timeToDatetime)
+            ea = Dma_crossover.DMACrossOver(toPlot=self.toPlot,  shortPeriod=self.shortPeriod,longPeriod=self.longPeriod, 
+                                            dataProvider = self.dataProvider,storageType = self.storageType,period = self.period,
+                                            instruments=self.instruments,money = self.money,feeds = feeds)               
+            self.results01.append(ea)
+            ea.run(timeFrom = timeFromDatetime,timeTo = timeToDatetime)
             
-            '''
-            result01 = self.ea.run(timeFrom = timeFromDatetime,timeTo = timeToDatetime)
-            self.results01.append(result01)
-            
-            result02 = self.ea.summary() 
+            result02 = ea.summary() 
             self.results02.append(result02)
             
             startTimeStamp = endTimeStamp
             
-        return self.results02
-    def getEa(self):    
-        instruments = ['XAUUSD']
-        money = moneySecond.moneySecond()  
-        ea = Ea.Expert(toPlot=True,  shortPeriod=10,longPeriod=20, 
-                      dataProvider = 'mt5',storageType = 'csv',period = 'm5',
-                      instruments=instruments,money = money)    
-        return ea        
+        return self.results02     
+    def getFeeds(self,timeFrom=None,timeTo=None):
+        import os,sys        
+        xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,os.pardir,'midProjects','histdata'))
+        sys.path.append(xpower)
+        
+        import dataCenter as dataCenter            
+        self.dataCenter = dataCenter.dataCenter()           
+        feeds = self.dataCenter.getFeedsForPAT(dataProvider = self.dataProvider,storageType = self.storageType,instruments = self.instruments,
+                                               period=self.period,timeTo = timeTo,timeFrom=timeFrom)        
+        return feeds
 if __name__ == "__main__": 
     app = QtGui.QApplication(sys.argv)    
     startRun = time.clock()
     
-    eaController('2016-05-20 00:00:00', '2016-05-30 00:00:00', 2).run()
+    eaController('2016-05-20 00:00:00', '2016-05-30 00:00:00', 2,False).run()
     
     endRun = time.clock()
     print "run time: %f s" % (endRun - startRun)       
