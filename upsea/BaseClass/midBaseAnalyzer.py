@@ -168,3 +168,4 @@ class midBaseAnalyzer():
         dialog = self.initDialog(results=results, KData=KData)
         self.Globals.append(dialog)
         dialog.showMaximized()  
+        

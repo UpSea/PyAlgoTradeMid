@@ -268,6 +268,10 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.info("onBars().Status info,before enterShort(), SHORT POSITION to open %.2f,need amount: %.2f,available amount: %.2f." % 
                       (shares,shares*self.getLastPrice(self.instrument),self.getBroker().getCash() ))                                    
             self.shortPosition = self.enterShort(self.instrument, shares, True)
+    def __analise(self):
+        dataForCandle = self.dataCenter.getCandleData(dataProvider = self.dataProvider,dataStorage = self.storageType,dataPeriod = self.period,
+                                                 symbol = self.instrument,dateStart=self.timeFrom,dateEnd = self.timeTo)     
+        self.analyzer.analyze(self.result,dataForCandle)            
     def run(self,timeFrom = None,timeTo = None):
         self.initEa(timeFrom = timeFrom,timeTo = timeTo)
         
@@ -298,7 +302,7 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         #------------------------------------
     
         if(self.toPlot):
-            self.analise()
+            self.__analise()
             
             
         return self.result            
