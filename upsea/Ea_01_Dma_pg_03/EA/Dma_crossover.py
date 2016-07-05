@@ -25,17 +25,18 @@ class DMACrossOver(midBaseStrategy):
         self.__initDataCenter()
         self.__initEa()
     def __initEa(self):
+        #mid 1)signal 控制参数
         self.longAllowed = True
         self.shortAllowed = True         
         self.__shortPeriod = 10
         self.__longPeriod = 20        
-
+        #mid 2)signal 计算指标图形化输出控制
         self.toPlot = True   
         self.analyzer  = Analyzer(Globals=[])   
-
+        #mid 3)money 风险策略控制
         self.money = moneySecond.moneySecond()  
     def __initDataCenter(self):
-        #mid 子类中定义，父类中使用  
+        #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.dataProvider = 'mt5'
         self.storageType = 'csv'
         self.period = 'm5'
@@ -46,7 +47,7 @@ class DMACrossOver(midBaseStrategy):
         self.__sma = ma.SMA(self.closePrices, self.__shortPeriod,maxLen=self.mid_DEFAULT_MAX_LEN)
         self.__lma = ma.SMA(self.closePrices,self.__longPeriod,maxLen=self.mid_DEFAULT_MAX_LEN)   
     def addIndicators(self):
-        #mid used to analyzer
+        #mid 此处生成的数据仅由Analyzer消费
         self.result['short_ema'] = list(self.__sma)
         self.result['long_ema'] = list(self.__lma)
     
