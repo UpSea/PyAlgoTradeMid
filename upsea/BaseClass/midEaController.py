@@ -14,7 +14,7 @@ class eaController():
         interval = (timeStampTo - timeStampFrom)/phases
         
         startTimeStamp = timeStampFrom
-        self.results02 = []
+        results = []
         for index in range(phases):
             endTimeStamp = startTimeStamp + interval
             
@@ -25,12 +25,12 @@ class eaController():
             self.ea.run(timeFrom = timeFromDatetime,timeTo = timeToDatetime)
 
             self.eaList.append(self.ea)
-            result02 = self.ea.summary() 
-            self.results02.append(result02)
+            summary = self.ea.summary() 
+            results.append(summary)
             
             startTimeStamp = endTimeStamp
         print  "------------------------"
         print timeFrom,' to ',timeTo
         print  "------------------------"
-        for result in self.results02:
+        for result in results:
             print result      

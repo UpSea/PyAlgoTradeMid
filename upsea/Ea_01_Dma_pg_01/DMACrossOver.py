@@ -9,15 +9,15 @@ xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir))
 sys.path.append(xpower)
 from BaseClass import midEaController
 
-import EA.Dma_crossover as ea
+import EA.Signal as signal
             
 if __name__ == "__main__": 
     app = QtGui.QApplication(sys.argv)    
     startRun = time.clock()
     
-    ea = ea.DMACrossOver()
-    eaController = midEaController.eaController(ea)
-    eaController.runByPhase('2016-05-05 00:00:00', '2016-05-30 00:00:00', 2,True)
+    signal = signal.DMACrossOver()
+    eaController = midEaController.eaController(signal)
+    eaController.runByPhase('2016-05-25 00:00:00', '2016-05-30 00:00:00', 1,True)
     
     endRun = time.clock()
     print "run time: %f s" % (endRun - startRun)       

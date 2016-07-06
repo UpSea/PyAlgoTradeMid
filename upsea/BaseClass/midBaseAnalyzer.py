@@ -64,22 +64,7 @@ class midBaseAnalyzer():
             position_pnl = np.array(self.results.position_pnl)
             ax.plot(date,position_pnl , pen=(255,255,255), name="Red curve")
             ax.scatterAddition(date, position_pnl)    
-    def signalPlot(self,ax):
-        date = np.array([mpd.date2num(date) for date in self.results.index]) 
-        if 'buy' in self.results and 'sell' in self.results:     
-            xBuy = np.array([mpd.date2num(date) for date in self.results.ix[self.results.buy].index])         
-            yBuy = np.array(self.results.short_ema[self.results.buy])            
-            for x1,y1 in zip(xBuy,yBuy):
-                a1 = pg.ArrowItem(angle=90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'r', 'width': 1})
-                ax.addItem(a1)
-                a1.setPos(x1,y1)        
-                
-            xSell = np.array([mpd.date2num(date) for date in self.results.ix[self.results.sell].index])         
-            ySell = np.array(self.results.short_ema[self.results.sell])            
-            for x1,y1 in zip(xSell,ySell):
-                a1 = pg.ArrowItem(angle=-90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'g', 'width': 1})
-                ax.addItem(a1)
-                a1.setPos(x1,y1)          
+        
     
     #----------------------------------------------------------------------
     def pricePlot(self,ax,bDrawText=False):
@@ -112,9 +97,8 @@ class midBaseAnalyzer():
         #  2.1)candle        
         pgCandleView = pgCandleWidgetCross(dataForCandle=KData)        
         self.pricePlot(pgCandleView) 
-        self.pricePlot(pgCandleView)    
-        self.indicatorsPlot(pgCandleView) 
-        self.signalPlot(pgCandleView)
+        #self.indicatorsPlot(pgCandleView) 
+        self.signalPlot(pgCandleView,yBuy = KData.take([1],axis=1),ySell = KData.take([1],axis=1))
         dCandle = Dock("candles",closable=True, size=(200,300))     ## give this dock the minimum possible size
         area.addDock(dCandle, 'bottom') 
         dCandle.addWidget(pgCandleView)        
@@ -123,7 +107,8 @@ class midBaseAnalyzer():
         if(True):
             PyqtGraphPnl = pgCrossAddition()
             self.positionPnlPlot(PyqtGraphPnl,bDrawText=bDrawText)
-            self.signalPlot(PyqtGraphPnl)
+            position_pnl = np.array(self.results.position_pnl)
+            self.signalPlot(PyqtGraphPnl,yBuy = position_pnl,ySell = position_pnl)
             dPnl = Dock("position_pnl", closable=True, size=(200,100))
             area.addDock(dPnl, 'bottom')    
             dPnl.addWidget(PyqtGraphPnl)           
@@ -153,10 +138,21 @@ class midBaseAnalyzer():
             dPortfolio.addWidget(PyqtGraphPortfolio)        
             PyqtGraphPortfolio.setXLink(pgCandleView)
         #  2.5)indicator
-        if(False):
+        if(True):
             PyqtGraphindicators = pgCrossAddition()
             self.pricePlot(PyqtGraphindicators)    
             self.indicatorsPlot(PyqtGraphindicators)
+            
+            signal01 = self.results.histogram
+            signal02 = np.array(self.results.position_pnl)
+            signal01 = signal01 * 0
+            
+            signal01 = np.array(signal01)
+            self.signalPlot(PyqtGraphindicators,yBuy = signal01,ySell = signal01)
+            
+            position_pnl = np.array(self.results.position_pnl)            
+            self.signalPlot(PyqtGraphindicators,yBuy = position_pnl,ySell = position_pnl)
+            
             dIndicator = Dock("indicator",closable=True, size=(200,100))
             dIndicator.addWidget(PyqtGraphindicators)
             area.addDock(dIndicator, 'bottom', dCandle)  
