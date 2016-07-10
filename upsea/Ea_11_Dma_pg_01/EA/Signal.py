@@ -29,7 +29,7 @@ class DMACrossOver(midBaseStrategy):
         self.InKLine = True
         self.longAllowed = True
         self.shortAllowed = True         
-        self.__shortPeriod = 10
+        self.__shortPeriod = 5
         self.__longPeriod = 20        
         #mid 2)signal 计算指标图形化输出控制
         #self.toPlot = True   
@@ -79,4 +79,4 @@ class DMACrossOver(midBaseStrategy):
         self.calcSignal()
         self.closePosition()
         self.openPosition()
-        self.recordPositions()      
+        self.recordAccount()      
