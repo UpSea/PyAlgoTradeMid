@@ -51,7 +51,9 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.timeFrom = timeFrom
         self.timeTo = timeTo        
         #mid follow vars will be used only this class
-        self.__curPositionCost = {}         #mid init position value
+        self.__curLongPositionCost = {}         #mid init position value
+        self.__curShortPositionCost = {}        #mid init position value
+        
         self.__position_volume = {}         #mid 当前持有头寸数量
         self.__position_cost = {}           #mid 当前持有头寸开仓成本
         self.__position_pnl = {}            #mid 当前持有头寸价值
@@ -77,7 +79,8 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.sellSignal[instrument] = False
 
             #mid follow vars will be used only this class
-            self.__curPositionCost[instrument] = 0                                                      #mid init position value
+            self.__curLongPositionCost[instrument] = 0                                                      #mid init position value
+            self.__curShortPositionCost[instrument] = 0                                                      #mid init position value
             self.__position_volume[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)       #mid 当前持有头寸数量
             self.__position_cost[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)         #mid 当前持有头寸开仓成本
             self.__position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
@@ -133,15 +136,19 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.info("onBars().recordAccount().----portfolio value: %.2f" % (portfolio_value))
         self.info("onBars().recordAccount().----cash in portfolio: %.2f" % (cash))
         for instrument in self.instruments:
-            position = broker.getPositions()                   #mid position is dict of share
-            share = broker.getShares(instrument)        #mid position is dict of share
+
+            share = broker.getShares(instrument)                #mid position is dict of share
             lastPrice = self.getLastPrice(instrument)  
             if(lastPrice is None):
                 continue
             position_value = lastPrice*share
-
-            position_cost = self.__curPositionCost[instrument]
-
+            if(position_value > 0):
+                position_cost = self.__curLongPositionCost[instrument] 
+            elif(position_value < 0):
+                position_cost = self.__curShortPositionCost[instrument]
+            else:
+                position_cost = 0
+                
             position_pnl = (position_value - position_cost)
 
 
@@ -209,10 +216,16 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             则此处求出 position=10
              '''
             share = position.getShares()
-        self.__curPositionCost[instrument] = openPrice*share
-        
+            
+        if isinstance(position, strategy.position.LongPosition):
+            self.__curLongPositionCost[instrument] = openPrice*share
+            
+        if isinstance(position, strategy.position.ShortPosition):
+            self.__curShortPositionCost[instrument] = openPrice*share
+
+        #mid 1.1) a example to show price gap
         planedCost = 100000
-        if(planedCost - abs(self.__curPositionCost[instrument]) > 1000):
+        if(planedCost - abs(self.__curLongPositionCost[instrument]) > 1000):
             '''mid 
             跳开gap导致的n-1 day计划持仓金额和n day实际持仓金额之间的差额
             以n-1day的close价格为依据计算share to open
@@ -231,13 +244,14 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         portfolio = self.getResult()
         cash = self.getBroker().getCash()     
         print
-        print str(self.__curPositionCost[instrument])+'='+str(share)+'*'+str(openPrice)
         self.info("onEnterOk().symbol:%s" % (instrument))        
         self.info("onEnterOk().current available cash: %.2f,portfolio: %.2f." % (cash,portfolio))
         if isinstance(position, strategy.position.LongPosition):
+            print str(self.__curLongPositionCost[instrument])+'='+str(share)+'*'+str(openPrice)
             self.info("onEnterOK().ExecutionInfo: %s,OPEN LONG %.2f at $%.2f" 
                       % (execInfo.getDateTime(),execInfo.getQuantity(),execInfo.getPrice())) 
         elif isinstance(position, strategy.position.ShortPosition):
+            print str(self.__curShortPositionCost[instrument])+'='+str(share)+'*'+str(openPrice)
             self.info("onEnterOK().ExecutionInfo: %s,OPEN SHORT %.2f at $%.2f" 
                       % (execInfo.getDateTime(),execInfo.getQuantity(),execInfo.getPrice()))     
 
@@ -264,10 +278,15 @@ class midBaseStrategy(strategy.BacktestingStrategy):
 
         if isinstance(position, strategy.position.LongPosition):
             self.longPosition[instrument] = None
+            self.__curLongPositionCost[instrument] = 0
+            
+            
+            
             self.info("onExitOk().ExecutionInfo: %s,CLOSE LONG %.2f at $%.2f" 
                       % (execInfo.getDateTime(),execInfo.getQuantity(),execInfo.getPrice()))                    
         elif isinstance(position, strategy.position.ShortPosition):
             self.shortPosition[instrument] = None
+            self.__curShortPositionCost[instrument] = 0           
             self.info("onExitOk().ExecutionInfo: %s,CLOSE SHORT %.2f at $%.2f" 
                       % (execInfo.getDateTime(),execInfo.getQuantity(),execInfo.getPrice()))                    
     def onExitCanceled(self, position):
@@ -329,37 +348,38 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         以上1,2的计算逻辑是一致的。如果当前bar的close和下一个bar的open相差无几时，两种算法的回测结果也应相差无几
         '''         
         # mid 2)open
-        for instrument in self.instruments:
-            self.curInstrument = instrument
-            if(self.buySignal[instrument] == True):
-                shares = self.money.getShares(strat = self)              
-                print
-                self.info("onBars().openPosition(), instrument %s" % (instrument))   
-                self.info("onBars().openPosition(), LONG POSITION to open %.2f" % (shares) )                
-                self.info("onBars().openPosition(), need amount: %.2f." % (shares*self.getLastPrice(instrument)))                  
-                self.info("onBars().openPosition(), available amount: %.2f." % (self.getBroker().getCash() ))                                    
-                self.longPosition[instrument] = self.enterLong(instrument, shares, True)
-            if(self.sellSignal[instrument] == True):
-                # Enter a buy market order. The order is good till canceled.
-                bar = self.getFeed().getLastBar(instrument)
-                volume = 0
-                lastClose = 0
-                if bar is not None:
-                    volume = bar.getVolume() 
-                    lastClose = bar.getClose()
-                shares = self.money.getShares(strat = self)
-                print
-                self.info("onBars().openPosition(), instrument %s" % (instrument))   
-                self.info("onBars().openPosition(), SHORT POSITION to open %.2f" % (shares))   
-                self.info("onBars().openPosition(), lastClose: %.2f,%.2f" % (self.getLastPrice(instrument),lastClose))  
-                self.info("onBars().openPosition(), need amount: %.2f" % (shares*self.getLastPrice(instrument)))  
-                self.info("onBars().openPosition(), available amount: %.2f." % (self.getBroker().getCash() ))                  
-                self.info("onBars().openPosition(), available volume: %.2f." % (volume))                  
-                
-
-
-
-                self.shortPosition[instrument] = self.enterShort(instrument, shares, True)
+        if(self.shortAllowed):
+            for instrument in self.instruments:
+                self.curInstrument = instrument
+                if(self.sellSignal[instrument] == True):
+                    # Enter a buy market order. The order is good till canceled.
+                    bar = self.getFeed().getLastBar(instrument)
+                    volume = 0
+                    lastClose = 0
+                    if bar is not None:
+                        volume = bar.getVolume() 
+                        lastClose = bar.getClose()
+                    shares = self.money.getShares(strat = self)
+                    print
+                    self.info("onBars().openPosition(), instrument %s" % (instrument))   
+                    self.info("onBars().openPosition(), SHORT POSITION to open %.2f" % (shares))   
+                    self.info("onBars().openPosition(), lastClose: %.2f,%.2f" % (self.getLastPrice(instrument),lastClose))  
+                    self.info("onBars().openPosition(), need amount: %.2f" % (shares*self.getLastPrice(instrument)))  
+                    self.info("onBars().openPosition(), available amount: %.2f." % (self.getBroker().getCash() ))                  
+                    self.info("onBars().openPosition(), available volume: %.2f." % (volume))                  
+                    self.shortPosition[instrument] = self.enterShort(instrument, shares, True)            
+            
+        if(self.longAllowed):
+            for instrument in self.instruments:
+                self.curInstrument = instrument
+                if(self.buySignal[instrument] == True):
+                    shares = self.money.getShares(strat = self)              
+                    print
+                    self.info("onBars().openPosition(), instrument %s" % (instrument))   
+                    self.info("onBars().openPosition(), LONG POSITION to open %.2f" % (shares) )                
+                    self.info("onBars().openPosition(), need amount: %.2f." % (shares*self.getLastPrice(instrument)))                  
+                    self.info("onBars().openPosition(), available amount: %.2f." % (self.getBroker().getCash() ))                                    
+                    self.longPosition[instrument] = self.enterLong(instrument, shares, True)
     def __analise(self,instrument):
         dataForCandle = self.dataCenter.getCandleData(dataProvider = self.dataProvider,dataStorage = self.storageType,dataPeriod = self.period,
                                                  symbol = instrument,dateStart=self.timeFrom,dateEnd = self.timeTo)     

@@ -22,20 +22,22 @@ class Analyzer(midBaseAnalyzer):
         if 'buy' in self.results and 'sell' in self.results:   
 
             if(yBuy == None or ySell == None):
-                return
-            xBuy = np.array([mpd.date2num(date) for date in self.results.ix[self.results.buy].index])    
-            
-            
-            
-            #yBuy = np.array(self.results['long_ema'][self.results.buy])            
-            for x1,y1 in zip(xBuy,yBuy):
-                a1 = pg.ArrowItem(angle=90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'r', 'width': 1})
-                ax.addItem(a1)
-                a1.setPos(x1,y1)        
+                if 'long_ema' in self.results and 'long_ema' in self.results:   
+                    yBuy = np.array(self.results['long_ema'][self.results.buy])        
+                    ySell = np.array(self.results['long_ema'][self.results.sell])            
+                               
+                #yBuy = np.array(self.results.long_ema)
+                #ySell = np.array(self.results.long_ema)
                 
-            xSell = np.array([mpd.date2num(date) for date in self.results.ix[self.results.sell].index])         
-            #ySell = np.array(self.results['long_ema'][self.results.sell])            
-            for x1,y1 in zip(xSell,ySell):
-                a1 = pg.ArrowItem(angle=-90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'g', 'width': 1})
-                ax.addItem(a1)
-                a1.setPos(x1,y1)                  
+            if(yBuy is not None or ySell is not None):
+                if 'long_ema' in self.results and 'long_ema' in self.results:   
+                    xBuy = np.array([mpd.date2num(date) for date in self.results.ix[self.results.buy].index])    
+                    for x1,y1 in zip(xBuy,yBuy):
+                        a1 = pg.ArrowItem(angle=90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'r', 'width': 1})
+                        ax.addItem(a1)
+                        a1.setPos(x1,y1)        
+                    xSell = np.array([mpd.date2num(date) for date in self.results.ix[self.results.sell].index])         
+                    for x1,y1 in zip(xSell,ySell):
+                        a1 = pg.ArrowItem(angle=-90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'g', 'width': 1})
+                        ax.addItem(a1)
+                        a1.setPos(x1,y1)                  
