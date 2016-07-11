@@ -169,7 +169,7 @@ class midBaseAnalyzer():
             area.addDock(dIndicator, 'bottom', dCandle)  
             PyqtGraphindicators.setXLink(pgCandleView)
         #  2.2)position_pnl 当前position_pnl曲线
-        if(True):
+        if(False):
             PyqtGraphPortfolioInstruments = pgCrossAddition()
             self.instrumentPnlPlot(PyqtGraphPortfolioInstruments,bDrawText=bDrawText)
             position_pnl = np.array(self.results.position_pnl)

@@ -33,12 +33,12 @@ class moneySecond(baseMoney.baseMoney):
         
         '''
         self.portfolioIndex = 0     #mid 总投资次数序号        
-        self.initRisk = 0.60        #mid 风险系数
+        self.initRisk = 0.9        #mid 风险系数
         '''
         设定初始投资额
         '''
     def getShares(self,strat = None):   
-        curClosePrice = strat.getLastPrice(strat.getInstrument())
+        curClosePrice = strat.getLastPrice(strat.getCurInstrument())
         
         strat.info(('moneyFirst.getShare().price:%.3f'%(curClosePrice)))
         if(self.portfolioIndex == 0):

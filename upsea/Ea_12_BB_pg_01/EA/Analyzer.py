@@ -20,21 +20,28 @@ class Analyzer(midBaseAnalyzer):
             ax.plot(date,self.results['middle'])      
     def signalPlot(self,ax,yBuy = None,ySell = None):
         date = np.array([mpd.date2num(date) for date in self.results.index]) 
-        if 'buy' in self.results and 'sell' in self.results:     
-            xBuy = np.array([mpd.date2num(date) for date in self.results.ix[self.results.buy].index])         
-            yBuy = np.array(self.results['lower'][self.results.buy])            
-            for x1,y1 in zip(xBuy,yBuy):
-                if(np.isnan(x1) or np.isnan(y1)):
-                    return                
-                a1 = pg.ArrowItem(angle=90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'r', 'width': 1})
-                ax.addItem(a1)
-                a1.setPos(x1,y1)        
-                
-            xSell = np.array([mpd.date2num(date) for date in self.results.ix[self.results.sell].index])         
-            ySell = np.array(self.results['upper'][self.results.sell])            
-            for x1,y1 in zip(xSell,ySell):
-                if(np.isnan(x1) or np.isnan(y1)):
-                    return                
-                a1 = pg.ArrowItem(angle=-90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'g', 'width': 1})
-                ax.addItem(a1)
-                a1.setPos(x1,y1)                  
+        if 'buy' in self.results and 'sell' in self.results:   
+            if(yBuy == None or ySell == None):
+                if 'lower' in self.results:
+                    yBuy = np.array(self.results['lower'][self.results.buy])            
+                    ySell = np.array(self.results['lower'][self.results.sell])            
+            
+            
+            
+            if(yBuy is not None or ySell is not None):
+                if 'lower' in self.results and 'midlle' in self.results and 'upper' in self.results:
+                    xBuy = np.array([mpd.date2num(date) for date in self.results.ix[self.results.buy].index])         
+                    for x1,y1 in zip(xBuy,yBuy):
+                        if(np.isnan(x1) or np.isnan(y1)):
+                            return                
+                        a1 = pg.ArrowItem(angle=90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'r', 'width': 1})
+                        ax.addItem(a1)
+                        a1.setPos(x1,y1)        
+                        
+                    xSell = np.array([mpd.date2num(date) for date in self.results.ix[self.results.sell].index])         
+                    for x1,y1 in zip(xSell,ySell):
+                        if(np.isnan(x1) or np.isnan(y1)):
+                            return                
+                        a1 = pg.ArrowItem(angle=-90, tipAngle=60, headLen=5, tailLen=0, tailWidth=5, pen={'color': 'g', 'width': 1})
+                        ax.addItem(a1)
+                        a1.setPos(x1,y1)                  

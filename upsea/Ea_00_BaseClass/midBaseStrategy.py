@@ -5,6 +5,7 @@ from pyalgotrade.technical import cross
 from pyalgotrade.dataseries import SequenceDataSeries
 from pyalgotrade.dataseries import DEFAULT_MAX_LEN
 import pandas as pd
+import datetime as dt
 
 class midBaseStrategy(strategy.BacktestingStrategy):
     def getFeeds(self,timeFrom=None,timeTo=None):
@@ -347,6 +348,10 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         2.每个newbar按open价格计算指标，并在此newbar按open成交
         以上1,2的计算逻辑是一致的。如果当前bar的close和下一个bar的open相差无几时，两种算法的回测结果也应相差无几
         '''         
+        
+        time = self.getCurrentDateTime()
+        if(time == dt.datetime(2010,7,20,0,0)):
+            pass
         # mid 2)open
         if(self.shortAllowed):
             for instrument in self.instruments:
