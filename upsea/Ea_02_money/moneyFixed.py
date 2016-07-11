@@ -7,7 +7,7 @@ class moneyFixed(baseMoney.baseMoney):
     def getShares(self,strat = None):   
         curPrice = strat.getLastPrice(strat.getCurInstrument())        
         if(self.openIndex == 0):
-            self.initCash = strat.getBroker().getCash()*0.70
+            self.initCash = strat.getBroker().getCash()*0.2
             self.openIndex = self.openIndex + 1
             
         #shares = int(self.initCash/curPrice)

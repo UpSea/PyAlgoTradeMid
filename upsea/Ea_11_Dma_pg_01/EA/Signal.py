@@ -43,8 +43,8 @@ class DMACrossOver(midBaseStrategy):
         self.dataProvider = 'tushare'
         self.storageType = 'mongodb'
         self.period = 'D'
-        #self.instruments = ['000096','000099','000090',,'600449']        
-        self.instruments = ['600839']        
+        self.instruments = ['000096','000099','600839','600449']#,'600839']        
+        #self.instruments = ['600839']        
     def initIndicators(self):
         #mid 3)
         self.__sma = {}
