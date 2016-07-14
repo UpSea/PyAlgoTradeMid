@@ -28,7 +28,7 @@ class DMACrossOver(midBaseStrategy):
         #mid 1)signal 控制参数
         self.InKLine = True
         self.longAllowed = True
-        self.shortAllowed = False        
+        self.shortAllowed = True        
         self.__shortPeriod = 5
         self.__longPeriod = 20        
         #mid 2)signal 计算指标图形化输出控制
@@ -40,11 +40,17 @@ class DMACrossOver(midBaseStrategy):
         
     def __initDataCenter(self):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
-        self.dataProvider = 'tushare'
-        self.storageType = 'mongodb'
         self.period = 'D'
-        self.instruments = ['000096','000099','600839','600449']#,'600839']        
-        #self.instruments = ['600839']        
+        if(False):
+            self.dataProvider = 'tushare'
+            self.storageType = 'mongodb'
+            self.instruments = ['000096','000099','600839','600449']#,'600839']        
+        else:
+            self.dataProvider = 'mt5'
+            self.storageType = 'csv'            
+            self.instruments = ['XAUUSD','EURUSD'] 
+            #self.instruments = ['EURUSD'] 
+
     def initIndicators(self):
         #mid 3)
         self.__sma = {}
