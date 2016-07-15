@@ -41,10 +41,10 @@ class DMACrossOver(midBaseStrategy):
     def __initDataCenter(self):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.dataProvider = 'tushare'
-        self.storageType = 'mongodb'
+        self.storageType = 'csv'
         self.period = 'D'
         #self.instruments = ['000096','000099','600839','600449']#,'600839']        
-        self.instruments = ['600839']        
+        self.instruments = ['000021.SZ']        
     def initIndicators(self):
         #mid 3)
         self.__sma = {}
