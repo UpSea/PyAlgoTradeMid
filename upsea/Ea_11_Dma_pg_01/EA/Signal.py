@@ -45,12 +45,17 @@ class DMACrossOver(midBaseStrategy):
             self.dataProvider = 'tushare'
             self.storageType = 'mongodb'
             self.instruments = ['000096','000099','600839','600449']#,'600839']        
-        else:
+        if(True):
+            self.dataProvider = 'tushare'
+            self.storageType = 'csv'            
+            #self.instruments = ['XAUUSD','EURUSD'] 
+            self.instruments = ['000021.SZ'] 
+        if(False):
             self.dataProvider = 'mt5'
             self.storageType = 'csv'            
             self.instruments = ['XAUUSD','EURUSD'] 
-            #self.instruments = ['EURUSD'] 
-
+            #self.instruments = ['EURUSD']             
+       
     def initIndicators(self):
         #mid 3)
         self.__sma = {}
