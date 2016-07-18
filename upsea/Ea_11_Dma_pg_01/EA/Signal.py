@@ -53,7 +53,7 @@ class DMACrossOver(midBaseStrategy):
         if(True):
             self.dataProvider = 'eastmoney'
             self.storageType = 'mongodb'            
-            self.instruments = ['000021.SZ']#,'000022.SZ'] 
+            self.instruments = ['000021.SZ','000022.SZ'] #]
             #self.instruments = ['EURUSD']             
         if(False):
             self.dataProvider = 'mt5'
@@ -89,7 +89,10 @@ class DMACrossOver(midBaseStrategy):
             if self.shortPosition[instrument] is None:
                 if cross.cross_below(self.__sma[instrument], self.__lma[instrument]) > 0:
                     self.sellSignal[instrument] = True 
-    def onBars(self, bars):     
+    def onBars(self, bars):   
+        time = self.getCurrentDateTime()
+        if(time == dt.datetime(2001,11,8,0,0)):
+            pass        
         self.calcSignal()
         self.closePosition()
         self.openPosition()

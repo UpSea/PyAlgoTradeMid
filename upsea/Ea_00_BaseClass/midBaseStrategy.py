@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 from pyalgotrade import strategy
+
+from pyalgotrade.broker import backtesting
+from pyalgotrade.broker import fillstrategy
+
 from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
 from pyalgotrade.dataseries import SequenceDataSeries
@@ -39,9 +43,17 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.mid_DEFAULT_MAX_LEN = 10 * DEFAULT_MAX_LEN
         mid_DEFAULT_MAX_LEN = self.mid_DEFAULT_MAX_LEN
         
-        strategy.BacktestingStrategy.__init__(self, feed)
+        #mid set init cash
+        cash_or_brk = 1000000
+        volumeLimit = 0.5       #mid used to calculate available volume for an order: availableVolume = volumeLeft * volumeLimit
+        #mid set fillstrategy
+        fillStrategy = fillstrategy.DefaultStrategy(volumeLimit = volumeLimit)
         
-    
+        broker = backtesting.Broker(cash_or_brk, feed)
+        broker.setFillStrategy(fillStrategy)
+        #mid init base
+        strategy.BacktestingStrategy.__init__(self, feed,broker)
+        
         #mid 计算ma将使用当天的收盘价格计算
         #mid 1)
         self.closePrices = {}
@@ -348,10 +360,6 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         2.每个newbar按open价格计算指标，并在此newbar按open成交
         以上1,2的计算逻辑是一致的。如果当前bar的close和下一个bar的open相差无几时，两种算法的回测结果也应相差无几
         '''         
-        
-        time = self.getCurrentDateTime()
-        if(time == dt.datetime(2010,7,20,0,0)):
-            pass
         # mid 2)open
         if(self.shortAllowed):
             for instrument in self.instruments:

@@ -8,7 +8,7 @@ class moneyFixed(baseMoney.baseMoney):
         curPrice = strat.getLastPrice(strat.getCurInstrument())        
         if(self.openIndex == 0):
 
-            self.initCash = strat.getBroker().getCash()*0.5
+            self.initCash = strat.getBroker().getCash()*0.4
 
             self.openIndex = self.openIndex + 1
             
