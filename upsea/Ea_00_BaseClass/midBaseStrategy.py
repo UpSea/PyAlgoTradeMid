@@ -325,14 +325,16 @@ class midBaseStrategy(strategy.BacktestingStrategy):
 
         self.info('logInfo().price:%.3f,open:%.2f,high:%.2f,low:%.2f,close:%.2f'%(pPrice,pOpen,pHigh,pLow,pClose))
         #self.info('long:%.2f#short:%.2f'%(pLong,pShort)) 
-    def closePosition(self):
+    def closePosition(self):        
         for instrument in self.instruments:
-            if(self.longPosition[instrument] is not None and self.sellSignal[instrument] == True):
+            if(self.longPosition[instrument] is not None and self.sellSignal[instrument] == True
+               and not self.longPosition[instrument].exitActive()):
                 print
                 self.info("onBars().closePosition(), instrument:%s"  % (instrument))                                                    
                 self.info("onBars().closePosition(), LONG POSITION to close %.2f"  % (self.longPosition[instrument].getShares()))                                    
                 self.longPosition[instrument].exitMarket()
-            if(self.shortPosition[instrument] is not None and self.buySignal[instrument] == True):
+            if(self.shortPosition[instrument] is not None and self.buySignal[instrument] == True
+               and not self.shortPosition[instrument].exitActive()):
                 print
                 self.info("onBars().closePosition(), instrument:%s"  % (instrument))                                                                    
                 self.info("onBars().closePosition(), SHORT POSITION to close %.2f"  % (self.shortPosition[instrument].getShares()))  

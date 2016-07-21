@@ -16,7 +16,8 @@ from Analyzer import Analyzer
 #mid money
 dataRoot = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir))        
 sys.path.append(dataRoot)
-import Ea_02_money.moneyFixed  as moneyFixed
+import Ea_02_money.moneyFixedAmount  as moneyFixedAmount
+import Ea_02_money.moneyFixedRatio  as moneyFixedRatio
 import Ea_02_money.moneyFirst  as moneyFirst
 import Ea_02_money.moneySecond as moneySecond
   
@@ -35,31 +36,113 @@ class DMACrossOver(midBaseStrategy):
         #self.toPlot = True   
         self.analyzer  = Analyzer(Globals=[])   
         #mid 3)money 风险策略控制
-        #self.money = moneySecond.moneySecond()  
-        self.money = moneyFixed.moneyFixed()  
-        
+        money = "moneyFixedRatio"
+        if(money == "moneySecond"):
+            self.money = moneySecond.moneySecond()  
+        elif(money == "moneyFixedAmount"):
+            self.money = moneyFixedAmount.moneyFixedAmount() 
+        elif(money == "moneyFixedRatio"):
+            self.money = moneyFixedRatio.moneyFixedRatio() 
+    def __getInstrumentsEastmoneyFormat(self):
+        codesStr = """600000.SH
+                600010.SH
+                600016.SH
+                600028.SH
+                600029.SH
+                600030.SH
+                600036.SH
+                600048.SH
+                600050.SH
+                600104.SH
+                600109.SH
+                600111.SH
+                600518.SH
+                600519.SH
+                600637.SH
+                600795.SH
+                600837.SH
+                600887.SH
+                600893.SH
+                600958.SH
+                600999.SH
+                601006.SH
+                601088.SH
+                601166.SH
+                601169.SH
+                601186.SH
+                601211.SH
+                601288.SH
+                601318.SH
+                601328.SH
+                601336.SH
+                601377.SH
+                601390.SH
+                601398.SH
+                601601.SH
+                601628.SH
+                601668.SH
+                601669.SH
+                601688.SH
+                601727.SH
+                601766.SH
+                601788.SH
+                601800.SH
+                601818.SH
+                601857.SH
+                601919.SH
+                601985.SH
+                601988.SH
+                601989.SH
+                601998.SH
+                """          
+        codesStr = """600000.SH
+                600010.SH
+                600016.SH
+                600028.SH
+                """     
+        return codesStr
+    def __getInstrumentsTushare(self):
+        #mid 1)从excel赋值粘贴获得如下数据
+        codesStr = self.__getInstrumentsEastmoneyFormat()
+        #mid 2)将字符串使用split()分割为list，默认会去除\n和所有空格。
+        #codeList = ['000021','000022']
+        codeList = [code.split('.')[0] for code in codesStr.split()]     
+        return codeList  
+    def __getInstrumentsEastmoney(self):
+        codesStr = self.__getInstrumentsEastmoneyFormat()
+        #mid 2)将字符串使用split()分割为list，默认会去除\n和所有空格。
+        #codeList = ['000021.SZ','000022.SZ']
+        codeList = codesStr.split()
+        return codeList
+    def __getInstruments(self,dataSource):
+        if(dataSource == "tushare"):
+            return self.__getInstrumentsTushare()
+        if(dataSource == "eastmoney"):
+            return self.__getInstrumentsEastmoney()
     def __initDataCenter(self):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.period = 'D'
-        if(False):
+        
+        selector = "tow"
+        if(selector == "one"):
             self.dataProvider = 'tushare'
             self.storageType = 'mongodb'
-            self.instruments = ['000096','000099','600839','600449']#,'600839']        
-        if(False):
+            self.instruments = ['000096','000099','600839','600449']#,'600839']     
+        if(selector == "tow"):
             self.dataProvider = 'tushare'
-            self.storageType = 'csv'            
+            self.storageType = 'mongodb'            
             #self.instruments = ['XAUUSD','EURUSD'] 
-            self.instruments = ['000021.SZ'] 
-        if(True):
+            self.instruments = self.__getInstruments(self.dataProvider)
+        if(selector == "three"):
             self.dataProvider = 'eastmoney'
             self.storageType = 'mongodb'            
-            self.instruments = ['000021.SZ','000022.SZ'] #]
-            #self.instruments = ['EURUSD']             
-        if(False):
+            #self.instruments = ['000021.SZ','000022.SZ'] #]
+            self.instruments = self.__getInstruments(self.dataProvider)             
+        if(selector == "four"):
             self.dataProvider = 'mt5'
             self.storageType = 'csv'            
-            self.instruments = ['XAUUSD','EURUSD'] 
-            #self.instruments = ['EURUSD']                    
+            #self.instruments = ['XAUUSD','EURUSD'] 
+            self.instruments = ['XAUUSD']                    
     def initIndicators(self):
         #mid 3)
         self.__sma = {}
