@@ -110,7 +110,9 @@ class DMACrossOver(midBaseStrategy):
         codeList = codesStr.split()
         return codeList
     def __getBenchSymbol(self):
-        return "510050"
+        return "510050.SH"
+    def __getBenchDataProvider(self):
+        return "eastmoney"
     def __getInstruments(self,dataSource):
         if(dataSource == "tushare"):
             return self.__getInstrumentsTushare()
@@ -120,6 +122,7 @@ class DMACrossOver(midBaseStrategy):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.period = 'D'
         self.benchSymbol = self.__getBenchSymbol()
+        self.benchDataProvider = self.__getBenchDataProvider()
         selector = "tow"
         if(selector == "one"):
             self.dataProvider = 'tushare'

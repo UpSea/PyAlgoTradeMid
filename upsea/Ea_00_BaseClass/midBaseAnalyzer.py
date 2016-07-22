@@ -200,7 +200,7 @@ class midBaseAnalyzer():
         if 'available_cash' in self.result:
             ax.plot(date,self.result.available_cash,pen=(255,255,255))
             ax.scatterAddition(date, self.result.available_cash)     
-    def initDialogSummary(self,result):
+    def initDialogSummary(self,result,KData=None):
         # 1) creates layouts
         dialog = QtGui.QDialog()   
         mainLayout = QtGui.QHBoxLayout()
@@ -219,6 +219,13 @@ class midBaseAnalyzer():
         area = DockArea()   
         rightLayout.addWidget(area)
 
+
+        # 2) creates widgets 
+        #  2.1)candle        
+        pgCandleView = pgCandleWidgetCross(dataForCandle=KData)        
+        dCandle = Dock("candles",closable=True, size=(200,300))     ## give this dock the minimum possible size
+        area.addDock(dCandle, 'bottom') 
+        dCandle.addWidget(pgCandleView)       
         # 2) creates widgets 
         # 2.3)position_cost 
         if(True):
@@ -227,7 +234,7 @@ class midBaseAnalyzer():
             dAvailableCash = Dock("available_cash",closable=True, size=(200,100))
             area.addDock(dAvailableCash, 'bottom')        
             dAvailableCash.addWidget(PyqtGraphPositionCost)             
-            #PyqtGraphPositionCost.setXLink(pgCandleView)         
+            PyqtGraphPositionCost.setXLink(pgCandleView)         
         # 2.3)position_cost 
         if(True):
             PyqtGraphPositionCost = pgCrossAddition()
@@ -235,12 +242,12 @@ class midBaseAnalyzer():
             dPortfolioValue = Dock("portfolio_value",closable=True, size=(200,100))
             area.addDock(dPortfolioValue, 'bottom')        
             dPortfolioValue.addWidget(PyqtGraphPositionCost)             
-            #PyqtGraphPositionCost.setXLink(pgCandleView) 
+            PyqtGraphPositionCost.setXLink(pgCandleView) 
         return dialog        
-    def analyseSummary(self,result):
+    def analyseSummary(self,result,KData=None):
         # Plot the portfolio data.
         self.result = result    
-        dialog = self.initDialogSummary(result=result)
+        dialog = self.initDialogSummary(result=result,KData=KData)
         self.Globals.append(dialog)
         dialog.showMaximized()          
         

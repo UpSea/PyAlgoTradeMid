@@ -412,7 +412,11 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.analyzer.analyseEachSymbol(self.results[instrument],dataForCandle,InKLine = self.InKLine)
         
     def __analiseSummary(self):
-        self.analyzer.analyseSummary(self.result)
+        dataProvider = self.benchDataProvider
+        instrument = self.benchSymbol
+        dataForCandle = self.dataCenter.getCandleData(dataProvider = dataProvider,dataStorage = self.storageType,dataPeriod = self.period,
+                                                 symbol = instrument,dateStart=self.timeFrom,dateEnd = self.timeTo)          
+        self.analyzer.analyseSummary(self.result,dataForCandle)
     def run(self,timeFrom = None,timeTo = None):
         self.initEa(timeFrom = timeFrom,timeTo = timeTo)
         
