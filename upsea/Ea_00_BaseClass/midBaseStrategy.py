@@ -64,13 +64,15 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.timeFrom = timeFrom
         self.timeTo = timeTo        
         #mid follow vars will be used only this class
+        self.__portfolio_value = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+        self.__available_cash =  SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
         self.__curLongPositionCost = {}         #mid init position value
         self.__curShortPositionCost = {}        #mid init position value
         
         self.__position_volume = {}         #mid 当前持有头寸数量
         self.__position_cost = {}           #mid 当前持有头寸开仓成本
         self.__position_pnl = {}            #mid 当前持有头寸价值
-        self.__portfolio_value = {}
+        self.__position_value = {}
         self.__buy = {}
         self.__sell = {}    
         
@@ -97,7 +99,7 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.__position_volume[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)       #mid 当前持有头寸数量
             self.__position_cost[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)         #mid 当前持有头寸开仓成本
             self.__position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
-            self.__portfolio_value[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+            self.__position_value[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
             self.__buy[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
             self.__sell[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN) 
     def getAssetStructure(self):
@@ -142,12 +144,18 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         broker = self.getBroker()
         curTime = self.getCurrentDateTime()
         currentTime = self.getCurrentDateTime()
-        cash = broker.getCash()
+        cash = broker.getCash(includeShort=False)
         portfolio_value = broker.getEquity()               #mid 按close价格计算的权益
+        
+        
+        
         print 
         self.info("onBars().recordAccount().Current time:%s"%(str(currentTime)))
         self.info("onBars().recordAccount().----portfolio value: %.2f" % (portfolio_value))
         self.info("onBars().recordAccount().----cash in portfolio: %.2f" % (cash))
+        
+        self.__portfolio_value.appendWithDateTime(currentTime,portfolio_value) 
+        self.__available_cash.appendWithDateTime(currentTime,cash) 
         for instrument in self.instruments:
 
             share = broker.getShares(instrument)                #mid position is dict of share
@@ -175,18 +183,21 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.info("onBars().recordAccount().--------mid calculated postion pnl: %.2f" %(position_pnl))
 
             self.__position_volume[instrument].appendWithDateTime(currentTime,abs(share))  
-
             self.__position_cost[instrument].appendWithDateTime(currentTime,abs(position_cost))
-
             self.__position_pnl[instrument].appendWithDateTime(currentTime,position_pnl)
-
-            self.__portfolio_value[instrument].appendWithDateTime(currentTime,portfolio_value)  
+            self.__position_value[instrument].appendWithDateTime(currentTime,abs(position_value))  
             self.__buy[instrument].appendWithDateTime(currentTime,self.buySignal[instrument])              
             self.__sell[instrument].appendWithDateTime(currentTime,self.sellSignal[instrument]) 
+            
+            
+    def getPortfolioValue(self):
+        return self.__portfolio_value
+    def getAvailableCash(self):
+        return self.__available_cash
     def getCurInstrument(self):
         return self.curInstrument
-    def getPortfolio(self,instrument):
-        return self.__portfolio_value[instrument]
+    def getPositionValue(self,instrument):
+        return self.__position_value[instrument]
     def getPositionVolume(self,instrument):
         return self.__position_volume[instrument] 
     def getPositionCost(self,instrument):
@@ -395,10 +406,13 @@ class midBaseStrategy(strategy.BacktestingStrategy):
                     self.info("onBars().openPosition(), need amount: %.2f." % (shares*self.getLastPrice(instrument)))                  
                     self.info("onBars().openPosition(), available amount: %.2f." % (self.getBroker().getCash() ))                                    
                     self.longPosition[instrument] = self.enterLong(instrument, shares, True)
-    def __analise(self,instrument):
+    def __analiseEachSymbol(self,instrument):
         dataForCandle = self.dataCenter.getCandleData(dataProvider = self.dataProvider,dataStorage = self.storageType,dataPeriod = self.period,
                                                  symbol = instrument,dateStart=self.timeFrom,dateEnd = self.timeTo)     
-        self.analyzer.analyze(self.results[instrument],dataForCandle,InKLine = self.InKLine)            
+        self.analyzer.analyseEachSymbol(self.results[instrument],dataForCandle,InKLine = self.InKLine)
+        
+    def __analiseSummary(self):
+        self.analyzer.analyseSummary(self.result)
     def run(self,timeFrom = None,timeTo = None):
         self.initEa(timeFrom = timeFrom,timeTo = timeTo)
         
@@ -414,26 +428,30 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             buy = self.getBuy(instrument)
             sell = self.getSell(instrument)
 
-            portfolio_value = self.getPortfolio(instrument)
+            position_value = self.getPositionValue(instrument)
             position_volume = self.getPositionVolume(instrument)
             position_cost = self.getPositionCost(instrument)
             position_pnl = self.getPositionPnl(instrument)
 
             self.results[instrument] = pd.DataFrame({'position_volume':list(position_volume),'position_cost':list(position_cost),
                                'position_pnl':list(position_pnl),
-                               'buy':list(buy),'sell':list(sell),'portfolio_value':list(portfolio_value)},
-                              columns=['position_volume','position_cost','position_pnl','buy','sell','portfolio_value'],
+                               'buy':list(buy),'sell':list(sell),'position_value':list(position_value)},
+                              columns=['position_volume','position_cost','position_pnl','buy','sell','position_value'],
                               index=position_volume.getDateTimes())
-        
-        
-        
             self.addIndicators(instrument)
             #------------------------------------
     
-            if(self.toPlot):
-                self.__analise(instrument)
+            if(self.toPlotEachSymbol):
+                self.__analiseEachSymbol(instrument)
             
+        if(self.toPlotSummary):
+            portfolio_value = self.getPortfolioValue()
+            available_cash = self.getAvailableCash()
             
+            self.result = pd.DataFrame({'available_cash':list(available_cash),'portfolio_value':list(portfolio_value)},
+                              columns=['available_cash','portfolio_value'],
+                              index=portfolio_value.getDateTimes())
+            self.__analiseSummary()
         return self.results            
     #mid from ea
     #----------------------------------------------------------------------

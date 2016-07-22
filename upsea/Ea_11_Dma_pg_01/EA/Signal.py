@@ -29,14 +29,14 @@ class DMACrossOver(midBaseStrategy):
         #mid 1)signal 控制参数
         self.InKLine = True
         self.longAllowed = True
-        self.shortAllowed = True        
+        self.shortAllowed = False        
         self.__shortPeriod = 5
         self.__longPeriod = 20        
         #mid 2)signal 计算指标图形化输出控制
         #self.toPlot = True   
         self.analyzer  = Analyzer(Globals=[])   
         #mid 3)money 风险策略控制
-        money = "moneyFixedRatio"
+        money = "moneyFixedAmount"
         if(money == "moneySecond"):
             self.money = moneySecond.moneySecond()  
         elif(money == "moneyFixedAmount"):
@@ -94,12 +94,7 @@ class DMACrossOver(midBaseStrategy):
                 601988.SH
                 601989.SH
                 601998.SH
-                """          
-        codesStr = """600000.SH
-                600010.SH
-                600016.SH
-                600028.SH
-                """     
+                """    
         return codesStr
     def __getInstrumentsTushare(self):
         #mid 1)从excel赋值粘贴获得如下数据
@@ -114,6 +109,8 @@ class DMACrossOver(midBaseStrategy):
         #codeList = ['000021.SZ','000022.SZ']
         codeList = codesStr.split()
         return codeList
+    def __getBenchSymbol(self):
+        return "510050"
     def __getInstruments(self,dataSource):
         if(dataSource == "tushare"):
             return self.__getInstrumentsTushare()
@@ -122,7 +119,7 @@ class DMACrossOver(midBaseStrategy):
     def __initDataCenter(self):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.period = 'D'
-        
+        self.benchSymbol = self.__getBenchSymbol()
         selector = "tow"
         if(selector == "one"):
             self.dataProvider = 'tushare'

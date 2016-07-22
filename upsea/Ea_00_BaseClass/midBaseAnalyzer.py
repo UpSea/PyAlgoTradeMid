@@ -28,12 +28,12 @@ class midBaseAnalyzer():
             text = '('+str(round(y,3))+')'
             ax.annotate(text,xy=(x,y))   
     #----------------------------------------------------------------------
-    def portfolioPlot(self,ax,bDrawText=False):
+    def positionValuePlot(self,ax,bDrawText=False):
         """"""
         date = np.array([mpd.date2num(date) for date in self.results.index])  
-        if 'portfolio_value' in self.results:
-            ax.plot(date,self.results.portfolio_value,pen=(255,255,255))
-            ax.scatterAddition(date, self.results.portfolio_value) 
+        if 'position_value' in self.results:
+            ax.plot(date,self.results.position_value,pen=(255,255,255))
+            ax.scatterAddition(date, self.results.position_value) 
     def positionCostPlot(self,ax,bDrawText=False):  
         if 'position_cost' in self.results:
             position_cost = self.results.position_cost
@@ -91,7 +91,7 @@ class midBaseAnalyzer():
             ax.plot(date,self.results.AAPL)
             ax.scatterAddition(date, self.results.AAPL)
 
-    def initDialog(self,results=None,KData=None,bDrawText=False,InKLine = False):
+    def initDialogSymbol(self,results=None,KData=None,bDrawText=False,InKLine = False):
         # 1) creates layouts
         dialog = QtGui.QDialog()   
         mainLayout = QtGui.QHBoxLayout()
@@ -151,7 +151,7 @@ class midBaseAnalyzer():
         #  2.4)portfolio  总资产变动曲线 cash + equity
         if(True):
             PyqtGraphPortfolio = pgCrossAddition()
-            self.portfolioPlot(PyqtGraphPortfolio)
+            self.positionValuePlot(PyqtGraphPortfolio)
             dPortfolio = Dock("portfolio", closable=True,size=(200,100))
             area.addDock(dPortfolio, 'bottom')     
             dPortfolio.addWidget(PyqtGraphPortfolio)        
@@ -179,10 +179,68 @@ class midBaseAnalyzer():
             dPnl.addWidget(PyqtGraphPortfolioInstruments)           
             PyqtGraphPortfolioInstruments.setXLink(pgCandleView)            
         return dialog
-    def analyze(self,results=None,KData=None,bDrawText=False,InKLine = False):
-        # Plot the portfolio and asset data.
+    def analyseEachSymbol(self,results=None,KData=None,bDrawText=False,InKLine = False):
+        # Plot the symbol data.
         self.results = results    
-        dialog = self.initDialog(results=results, KData=KData,InKLine = InKLine)
+        dialog = self.initDialogSymbol(results=results, KData=KData,InKLine = InKLine)
         self.Globals.append(dialog)
         dialog.showMaximized()  
+        
+        
+    #----------------------------------------------------------------------
+    def portfolioPlot(self,ax,bDrawText=False):
+        """"""
+        date = np.array([mpd.date2num(date) for date in self.result.index])  
+        if 'portfolio_value' in self.result:
+            ax.plot(date,self.result.portfolio_value,pen=(255,255,255))
+            ax.scatterAddition(date, self.result.portfolio_value)      #----------------------------------------------------------------------
+    def availableCashPlot(self,ax,bDrawText=False):
+        """"""
+        date = np.array([mpd.date2num(date) for date in self.result.index])  
+        if 'available_cash' in self.result:
+            ax.plot(date,self.result.available_cash,pen=(255,255,255))
+            ax.scatterAddition(date, self.result.available_cash)     
+    def initDialogSummary(self,result):
+        # 1) creates layouts
+        dialog = QtGui.QDialog()   
+        mainLayout = QtGui.QHBoxLayout()
+        rightLayout = QtGui.QVBoxLayout()
+        mainLayout.addLayout(rightLayout)
+        dialog.setLayout(mainLayout)        
+        dialog.setWindowTitle(('Strategy Results'))
+
+        import os,sys        
+        xpower = os.path.abspath(os.path.join(os.path.dirname(__file__),os.pardir,os.pardir,os.pardir,'midProjects','histdataUI'))
+        sys.path.append(xpower)
+
+        from Widgets.pgCandleWidgetCross import pgCandleWidgetCross
+        from Widgets.pgCrossAddition import pgCrossAddition
+        from pyqtgraph.dockarea import DockArea,Dock 
+        area = DockArea()   
+        rightLayout.addWidget(area)
+
+        # 2) creates widgets 
+        # 2.3)position_cost 
+        if(True):
+            PyqtGraphPositionCost = pgCrossAddition()
+            self.availableCashPlot(PyqtGraphPositionCost)
+            dAvailableCash = Dock("available_cash",closable=True, size=(200,100))
+            area.addDock(dAvailableCash, 'bottom')        
+            dAvailableCash.addWidget(PyqtGraphPositionCost)             
+            #PyqtGraphPositionCost.setXLink(pgCandleView)         
+        # 2.3)position_cost 
+        if(True):
+            PyqtGraphPositionCost = pgCrossAddition()
+            self.portfolioPlot(PyqtGraphPositionCost)
+            dPortfolioValue = Dock("portfolio_value",closable=True, size=(200,100))
+            area.addDock(dPortfolioValue, 'bottom')        
+            dPortfolioValue.addWidget(PyqtGraphPositionCost)             
+            #PyqtGraphPositionCost.setXLink(pgCandleView) 
+        return dialog        
+    def analyseSummary(self,result):
+        # Plot the portfolio data.
+        self.result = result    
+        dialog = self.initDialogSummary(result=result)
+        self.Globals.append(dialog)
+        dialog.showMaximized()          
         

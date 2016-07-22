@@ -5,10 +5,11 @@ class eaController():
     def __init__(self,ea):
         self.ea = ea
         self.eaList = []
-    def runByPhase(self,timeFrom,timeTo,phases,toPlot):
+    def runByPhase(self,timeFrom,timeTo,phases,toPlotSummary,toPlotEachSymbol):
         #mid str to pyTimeStamp
         #self.toPlot = toPlot
-        self.ea.toPlot = toPlot
+        self.ea.toPlotSummary    = toPlotSummary
+        self.ea.toPlotEachSymbol = toPlotEachSymbol
         timeStampFrom = time.mktime(time.strptime(timeFrom, "%Y-%m-%d %H:%M:%S"))
         timeStampTo   = time.mktime(time.strptime(timeTo, "%Y-%m-%d %H:%M:%S")) 
         print timeFrom,timeTo
@@ -34,6 +35,7 @@ class eaController():
             results.append(summary)
             
             startTimeStamp = endTimeStamp
+        #self.ea.plotSummary()
         print  "------------------------"
         print timeFrom,' to ',timeTo
         print  "------------------------"
