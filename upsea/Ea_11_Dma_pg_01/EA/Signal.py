@@ -29,14 +29,14 @@ class DMACrossOver(midBaseStrategy):
         #mid 1)signal 控制参数
         self.InKLine = True
         self.longAllowed = True
-        self.shortAllowed = False        
+        self.shortAllowed = True        
         self.__shortPeriod = 5
         self.__longPeriod = 20        
         #mid 2)signal 计算指标图形化输出控制
         #self.toPlot = True   
         self.analyzer  = Analyzer(Globals=[])   
         #mid 3)money 风险策略控制
-        money = "moneyFixedAmount"
+        money = "moneyFixedRatio"
         if(money == "moneySecond"):
             self.money = moneySecond.moneySecond()  
         elif(money == "moneyFixedAmount"):
@@ -115,9 +115,10 @@ class DMACrossOver(midBaseStrategy):
         return "eastmoney"
     def __getInstruments(self,dataSource):
         if(dataSource == "tushare"):
-            return self.__getInstrumentsTushare()
+            instruments = self.__getInstrumentsTushare()
         if(dataSource == "eastmoney"):
-            return self.__getInstrumentsEastmoney()
+            instruments = self.__getInstrumentsEastmoney()
+        return instruments[0:1]    
     def __initDataCenter(self):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.period = 'D'

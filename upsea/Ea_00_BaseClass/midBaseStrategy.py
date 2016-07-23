@@ -65,14 +65,17 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.timeTo = timeTo        
         #mid follow vars will be used only this class
         self.__portfolio_value = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
-        self.__available_cash =  SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+        self.__available_cash  = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+        
+        self.__exitBar_position_pnl    = {}
+        
         self.__curLongPositionCost = {}         #mid init position value
         self.__curShortPositionCost = {}        #mid init position value
         
         self.__position_volume = {}         #mid 当前持有头寸数量
         self.__position_cost = {}           #mid 当前持有头寸开仓成本
         self.__position_pnl = {}            #mid 当前持有头寸价值
-        self.__position_value = {}
+        self.__position_cumulativePNL = {}  #mid 当前 symbol 持有头寸cumulative pnl 价值
         self.__buy = {}
         self.__sell = {}    
         
@@ -95,11 +98,13 @@ class midBaseStrategy(strategy.BacktestingStrategy):
 
             #mid follow vars will be used only this class
             self.__curLongPositionCost[instrument] = 0                                                      #mid init position value
-            self.__curShortPositionCost[instrument] = 0                                                      #mid init position value
+            self.__curShortPositionCost[instrument] = 0   
+            self.__exitBar_position_pnl[instrument] = None
+            #mid init position value
             self.__position_volume[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)       #mid 当前持有头寸数量
             self.__position_cost[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)         #mid 当前持有头寸开仓成本
             self.__position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
-            self.__position_value[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+            self.__position_cumulativePNL[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
             self.__buy[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
             self.__sell[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN) 
     def getAssetStructure(self):
@@ -138,6 +143,30 @@ class midBaseStrategy(strategy.BacktestingStrategy):
 
             return portfolio_value,cash,sum(positionsCloseValue.values())
         return portfolio_value,cash,0
+    def sampleSub01(self,instrument):
+        """mid not called anywhere
+        because of open price gap,method below is not right.
+        """
+        broker = self.getBroker()
+        a = broker.getEquity()
+        b = self.getResult()
+        
+        lastOpenPrice  = None
+        lastClosePrice = None
+        bar = self.getFeed().getLastBar(instrument)
+        if bar is not None:
+            lastOpenPrice = bar.getOpen()
+            lastClosePrice = bar.getClose() 
+             #lastPrice = self.getLastPrice(instrument)  
+           
+            pnl = (lastClosePrice - lastOpenPrice) * share
+        else:
+            pnl = 0 #mid instrument is dislisted.
+        if(len(self.__position_cumulativePNL[instrument])>0):
+            lastCumulativePNL = self.__position_cumulativePNL[instrument][-1]
+        else:
+            lastCumulativePNL = 0        
+            
     def recordAccount(self):
         # record position      
         #######################################################################
@@ -147,8 +176,6 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         cash = broker.getCash(includeShort=False)
         portfolio_value = broker.getEquity()               #mid 按close价格计算的权益
         
-        
-        
         print 
         self.info("onBars().recordAccount().Current time:%s"%(str(currentTime)))
         self.info("onBars().recordAccount().----portfolio value: %.2f" % (portfolio_value))
@@ -156,40 +183,84 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         
         self.__portfolio_value.appendWithDateTime(currentTime,portfolio_value) 
         self.__available_cash.appendWithDateTime(currentTime,cash) 
+        totalCumulativePNL = 0
         for instrument in self.instruments:
 
             share = broker.getShares(instrument)                #mid position is dict of share
-            lastPrice = self.getLastPrice(instrument)  
-            if(lastPrice is None):
+            lastClosePrice = self.getLastPrice(instrument)  
+
+            if(lastClosePrice is None):
                 continue
-            position_value = lastPrice*share
-            if(position_value > 0):
+            position_value = lastClosePrice*share
+            if(share > 0):
                 position_cost = self.__curLongPositionCost[instrument] 
-            elif(position_value < 0):
+            elif(share < 0):
                 position_cost = self.__curShortPositionCost[instrument]
             else:
                 position_cost = 0
                 
             position_pnl = (position_value - position_cost)
-
-
-            self.info("onBars().recordAccount().--------%s" % (instrument))
-            self.info("onBars().recordAccount().--------share:%.2f" % (share))
-            self.info("onBars().recordAccount().--------lastPrice:%.2f" % (lastPrice))
             
-            self.info("onBars().recordAccount().--------mid calculated position value: %.2f" %(position_value))
-            self.info("onBars().recordAccount().--------mid position cost: %.2f" %(position_cost))
-           
-            self.info("onBars().recordAccount().--------mid calculated postion pnl: %.2f" %(position_pnl))
+         
+            
 
             self.__position_volume[instrument].appendWithDateTime(currentTime,abs(share))  
             self.__position_cost[instrument].appendWithDateTime(currentTime,abs(position_cost))
             self.__position_pnl[instrument].appendWithDateTime(currentTime,position_pnl)
-            self.__position_value[instrument].appendWithDateTime(currentTime,abs(position_value))  
             self.__buy[instrument].appendWithDateTime(currentTime,self.buySignal[instrument])              
-            self.__sell[instrument].appendWithDateTime(currentTime,self.sellSignal[instrument]) 
+            self.__sell[instrument].appendWithDateTime(currentTime,self.sellSignal[instrument])        
             
-            
+            if(share != 0):
+                if(len(self.__position_pnl[instrument])>2):
+                    currentPositionPnl = self.__position_pnl[instrument][-1]
+                    lastPositionPnl = self.__position_pnl[instrument][-2]
+                    currentBarPnl = currentPositionPnl - lastPositionPnl
+                else:
+                    currentBarPnl = self.__position_pnl[instrument][-1]
+            else:              
+                currentBarPnl = 0  
+                
+            if(self.__exitBar_position_pnl[instrument] is not None):
+                """mid
+                如果当前bar有某个position在open price被closed掉，则当前bar的position_pnl是0.
+                在当前bar的openprice和上一bar的closeprice之间没有gap时，这个算法是合理的，但是，gap往往是存在的，
+                所以，据此计算的barPnl在exitbar上会有gap导致的误差
+                在此特别处理exitbar                
+                """
+                currentExitedPositionPnl = self.__exitBar_position_pnl[instrument]
+                lastPositionPnl = self.__position_pnl[instrument][-2]
+                currentBarExitedPnl = currentExitedPositionPnl - lastPositionPnl                
+                self.__exitBar_position_pnl[instrument] = None   
+                currentBarPnl = currentBarPnl + currentBarExitedPnl
+            if(len(self.__position_cumulativePNL[instrument])>0):
+                lastCumulativePNL = self.__position_cumulativePNL[instrument][-1]
+                cumulativePNL = lastCumulativePNL + currentBarPnl
+            else:
+                cumulativePNL = currentBarPnl   
+
+            self.__position_cumulativePNL[instrument].appendWithDateTime(currentTime,cumulativePNL)  
+
+            if(True):
+                self.info("onBars().recordAccount().--------mid current bar PNL: %.3f" %(currentBarPnl))
+                
+                self.info("onBars().recordAccount().--------%s" % (instrument))
+                self.info("onBars().recordAccount().--------share:%.3f" % (share))
+                self.info("onBars().recordAccount().--------lastClosePrice:%.3f" % (lastClosePrice))
+                
+                self.info("onBars().recordAccount().--------mid calculated position value: %.3f" %(position_value))
+                self.info("onBars().recordAccount().--------mid position cost: %.3f" %(position_cost))
+               
+                self.info("onBars().recordAccount().--------mid calculated postion pnl: %.3f" %(position_pnl))
+
+                self.info("onBars().recordAccount().--------mid CumulativePNL: %.3f" %(cumulativePNL))
+            totalCumulativePNL = totalCumulativePNL + cumulativePNL
+
+        if(abs(1000000 - (portfolio_value - totalCumulativePNL))>0.00000001):
+            self.info("onBars().recordAccount().--------mid initCash: %.3f" %(portfolio_value - totalCumulativePNL))
+            a = 8   
+                
+                
+                
     def getPortfolioValue(self):
         return self.__portfolio_value
     def getAvailableCash(self):
@@ -197,7 +268,7 @@ class midBaseStrategy(strategy.BacktestingStrategy):
     def getCurInstrument(self):
         return self.curInstrument
     def getPositionValue(self,instrument):
-        return self.__position_value[instrument]
+        return self.__position_cumulativePNL[instrument]
     def getPositionVolume(self,instrument):
         return self.__position_volume[instrument] 
     def getPositionCost(self,instrument):
@@ -217,6 +288,13 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         由于经常有跳开现象，所以依据bar(n-1).close发出的market order，
         在bar(n).open执行时通常会有gap出现，表现在position_cost图上时就是持有成本离计划成本会有跳口，
         '''
+        print 
+        currentTime = self.getCurrentDateTime()
+        execInfo = position.getEntryOrder().getExecutionInfo()   
+        self.info("onEnterOK().ExecutionInfo.Current time: %s"%(execInfo.getDateTime()))
+        
+        
+        
         #mid 1)record the position cost
         instrument = position.getInstrument()
         feed = self.getFeed()
@@ -267,7 +345,6 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         execInfo = position.getEntryOrder().getExecutionInfo()   
         portfolio = self.getResult()
         cash = self.getBroker().getCash()     
-        print
         self.info("onEnterOk().symbol:%s" % (instrument))        
         self.info("onEnterOk().current available cash: %.2f,portfolio: %.2f." % (cash,portfolio))
         if isinstance(position, strategy.position.LongPosition):
@@ -297,18 +374,33 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         cash = self.getBroker().getCash()
         instrument = position.getInstrument()
         
+        print 
+        currentTime = self.getCurrentDateTime()
+        self.info("onEnterOK().ExecutionInfo.Current time: %s"%(execInfo.getDateTime()))
+        
         self.info("onExitOk().instrument:%s." % (instrument))        
         self.info("onExitOk().current available cash: %.2f,portfolio: %.2f." % (cash,portfolio))
 
+        
+        
+        exQuantity  = execInfo.getQuantity()
+        exPrice     = execInfo.getPrice()  
+        exAmount    = exQuantity * exPrice
+        #self.sampleSub01(instrument)
         if isinstance(position, strategy.position.LongPosition):
+            positionCost = self.__curLongPositionCost[instrument]
+            self.__exitBar_position_pnl[instrument] = exAmount - positionCost
+            
+            
+            
             self.longPosition[instrument] = None
             self.__curLongPositionCost[instrument] = 0
-            
-            
-            
             self.info("onExitOk().ExecutionInfo: %s,CLOSE LONG %.2f at $%.2f" 
                       % (execInfo.getDateTime(),execInfo.getQuantity(),execInfo.getPrice()))                    
         elif isinstance(position, strategy.position.ShortPosition):
+            positionCost = self.__curShortPositionCost[instrument]
+            self.__exitBar_position_pnl[instrument] = -exAmount - positionCost
+            
             self.shortPosition[instrument] = None
             self.__curShortPositionCost[instrument] = 0           
             self.info("onExitOk().ExecutionInfo: %s,CLOSE SHORT %.2f at $%.2f" 
