@@ -64,22 +64,23 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.timeFrom = timeFrom
         self.timeTo = timeTo        
         #mid follow vars will be used only this class
-        self.__portfolio_value = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
-        self.__available_cash  = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
+        self.__portfolio_value = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)   #mid 记录资产组合(cash + 各个持仓证券的价值和)的合计价值变化
+        self.__available_cash  = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)   #mid 记录资产组合的现金变化
             
             
-        self.__long_exitBar_pnl = {}
-        self.__long_position_volume = {}                #mid 当前持有头寸数量
-        self.__long_position_cost = {}                  #mid 当前持有头寸开仓成本
-        self.__long_position_currentBar_pnl = {}        #mid 当前持有头寸价值  
-        self.__long_position_pnl = {}
+        self.__long_exitBar_pnl = {}                    #mid 多头平仓bar产生的pnl
+        self.__long_position_volume = {}                #mid 当前多头数量
+        self.__long_position_cost = {}                  #mid 当前持有多头开仓成本
+        self.__long_position_currentBar_pnl = {}        #mid 当前持有多头当前bar产生的pnl  
+        self.__long_position_pnl = {}                   #mid 当前多头累计产生的pnl
+        
         self.__short_exitBar_pnl = {}
         self.__short_position_volume = {}               #mid 当前持有头寸数量
         self.__short_position_cost = {}                 #mid 当前持有头寸开仓成本
         self.__short_position_currentBar_pnl = {}       #mid 当前持有头寸价值
         self.__short_position_pnl = {}
         
-        self.__position_cumulativePNL = {}              #mid 当前 symbol 持有头寸cumulative pnl 价值
+        self.__position_cumulativePNL = {}              #mid 当前 symbol 持有头寸cumulative pnl 价值(包括该symbol多头和空头的所有开仓平仓产生的pnl)
         self.__buy = {}
         self.__sell = {}    
         
