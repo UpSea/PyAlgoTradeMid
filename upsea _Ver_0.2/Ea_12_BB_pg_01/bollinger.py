@@ -15,9 +15,10 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)    
     startRun = time.clock()
     
-    signal = signal.DMACrossOver()
+    signal = signal.BollingerBands()
     eaController = midEaController.eaController(signal)
-    eaController.runByPhase('2010-06-07 00:00:00', '2016-07-20 00:00:00', 1,True,False)
+    eaController.runByPhase('2005-01-03 00:00:00', '2016-07-08 00:00:00', 1,True)
+    
     endRun = time.clock()
     print "run time: %f s" % (endRun - startRun)       
     sys.exit(app.exec_())  

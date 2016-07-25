@@ -35,54 +35,54 @@ class midBaseAnalyzer():
             ax.plot(date,self.results.position_value,pen=(255,255,255))
             ax.scatterAddition(date, self.results.position_value) 
     def positionCostPlot(self,ax,bDrawText=False):  
-        if 'long_cost' in self.results:
-            long_cost = self.results.long_cost
+        if 'position_cost' in self.results:
+            position_cost = self.results.position_cost
             date = np.array([mpd.date2num(date) for date in self.results.index]) 
         
             if(True):
                 '''mid
                 绘制所有日期的坐标
                 '''
-                ax.plot(date, long_cost,pen=(255,255,255), name="Position cost curve")
-                ax.scatterAddition(date, long_cost) 
+                ax.plot(date, position_cost,pen=(255,255,255), name="Position cost curve")
+                ax.scatterAddition(date, position_cost) 
             else:
                 '''mid
                 不绘制cost为0的日期的坐标
                 '''
-                indexOfZero = long_cost[:] == 0
-                count = len(long_cost[indexOfZero])
+                indexOfZero = position_cost[:] == 0
+                count = len(position_cost[indexOfZero])
                 
-                #date[0:count] = long_cost[count]
+                #date[0:count] = position_cost[count]
                 
                 dateOfNoneZero = date[count:]
-                position_costOfNoneZero = long_cost[count:]
+                position_costOfNoneZero = position_cost[count:]
                 
                 ax.plot(dateOfNoneZero,position_costOfNoneZero ,pen=(255,255,255), name="Position cost curve")
                 ax.scatterAddition(dateOfNoneZero, position_costOfNoneZero)   
             
     def positionVolumePlot(self,ax,bDrawText=False):  
-        if 'long_volume' in self.results:
-            long_volume = self.results.long_volume
+        if 'position_volume' in self.results:
+            position_volume = self.results.position_volume
             date = np.array([mpd.date2num(date) for date in self.results.index]) 
         
-            ax.plot(date, long_volume,pen=(255,255,255), name="Position curve")
-            ax.scatterAddition(date, long_volume)  
+            ax.plot(date, position_volume,pen=(255,255,255), name="Position curve")
+            ax.scatterAddition(date, position_volume)  
             
     def positionPnlPlot(self,ax,bDrawText=False):
         date = np.array([mpd.date2num(date) for date in self.results.index])
-        if 'long_pnl' in self.results:
-            long_pnl = np.array(self.results.long_pnl)
-            ax.plot(date,long_pnl , pen=(255,255,255), name="Red curve")
-            ax.scatterAddition(date, long_pnl)    
+        if 'position_pnl' in self.results:
+            position_pnl = np.array(self.results.position_pnl)
+            ax.plot(date,position_pnl , pen=(255,255,255), name="Red curve")
+            ax.scatterAddition(date, position_pnl)    
         
     def instrumentPnlPlot(self,ax,bDrawText=False):
         date = np.array([mpd.date2num(date) for date in self.results.index])
-        if 'long_pnl' in self.results:
-            long_pnl = np.array(self.results.long_pnl)
+        if 'position_pnl' in self.results:
+            position_pnl = np.array(self.results.position_pnl)
             
             
-            ax.plot(date,long_pnl , pen=(255,255,255), name="Red curve")
-            ax.scatterAddition(date, long_pnl)       
+            ax.plot(date,position_pnl , pen=(255,255,255), name="Red curve")
+            ax.scatterAddition(date, position_pnl)       
     #----------------------------------------------------------------------
     def pricePlot(self,ax,bDrawText=False):
         """"""
@@ -122,13 +122,13 @@ class midBaseAnalyzer():
         area.addDock(dCandle, 'bottom') 
         dCandle.addWidget(pgCandleView)        
 
-        #  2.2)long_pnl 当前position_pnl曲线
+        #  2.2)position_pnl 当前position_pnl曲线
         if(True):
             PyqtGraphPnl = pgCrossAddition()
             self.positionPnlPlot(PyqtGraphPnl,bDrawText=bDrawText)
-            long_pnl = np.array(self.results.long_pnl)
-            self.signalPlot(PyqtGraphPnl,yBuy = long_pnl,ySell = long_pnl)
-            dPnl = Dock("long_pnl", closable=True, size=(200,100))
+            position_pnl = np.array(self.results.position_pnl)
+            self.signalPlot(PyqtGraphPnl,yBuy = position_pnl,ySell = position_pnl)
+            dPnl = Dock("position_pnl", closable=True, size=(200,100))
             area.addDock(dPnl, 'bottom')    
             dPnl.addWidget(PyqtGraphPnl)           
             PyqtGraphPnl.setXLink(pgCandleView)
@@ -136,7 +136,7 @@ class midBaseAnalyzer():
         if(True):
             PyqtGraphPositionCost = pgCrossAddition()
             self.positionCostPlot(PyqtGraphPositionCost)
-            dPositionCost = Dock("long_cost",closable=True, size=(200,100))
+            dPositionCost = Dock("position_cost",closable=True, size=(200,100))
             area.addDock(dPositionCost, 'bottom')        
             dPositionCost.addWidget(PyqtGraphPositionCost)             
             PyqtGraphPositionCost.setXLink(pgCandleView)         

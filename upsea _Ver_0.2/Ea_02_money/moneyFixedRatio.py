@@ -5,7 +5,7 @@ class moneyFixedRatio(baseMoney.baseMoney):
         self.lastAllocatedCash = 0
     def getShares(self,strat = None):   
         curPrice = strat.getLastPrice(strat.getCurInstrument())        
-        allocatedCash = strat.getResult() * 0.012
+        allocatedCash = strat.getResult() * 0.016
         if(allocatedCash > self.lastAllocatedCash):
             self.lastAllocatedCash = allocatedCash
         print str(strat.getResult())
