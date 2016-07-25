@@ -31,7 +31,7 @@ class DMACrossOver(midBaseStrategy):
         self.longAllowed = True
         self.shortAllowed = True        
         self.__shortPeriod = 5
-        self.__longPeriod = 20        
+        self.__longPeriod = 20       
         #mid 2)signal 计算指标图形化输出控制
         #self.toPlot = True   
         self.analyzer  = Analyzer(Globals=[])   
@@ -118,13 +118,13 @@ class DMACrossOver(midBaseStrategy):
             instruments = self.__getInstrumentsTushare()
         if(dataSource == "eastmoney"):
             instruments = self.__getInstrumentsEastmoney()
-        return instruments[:]    
+        return instruments[0:1]    
     def __initDataCenter(self):
         #mid 数据中心存取参数定义，决定当前被回测数据的储存属性，用于获取candledata，feeds 
         self.period = 'D'
         self.benchSymbol = self.__getBenchSymbol()
         self.benchDataProvider = self.__getBenchDataProvider()
-        selector = "tow"
+        selector = "three"
         if(selector == "one"):
             self.dataProvider = 'tushare'
             self.storageType = 'mongodb'
@@ -141,9 +141,9 @@ class DMACrossOver(midBaseStrategy):
             self.instruments = self.__getInstruments(self.dataProvider)             
         if(selector == "four"):
             self.dataProvider = 'mt5'
-            self.storageType = 'csv'            
+            self.storageType = 'mongodb'            
             #self.instruments = ['XAUUSD','EURUSD'] 
-            self.instruments = ['XAUUSD']                    
+            self.instruments = ['XAGUSD','XAUUSD']                    
     def initIndicators(self):
         #mid 3)
         self.__sma = {}

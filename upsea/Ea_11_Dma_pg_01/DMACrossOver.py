@@ -17,7 +17,7 @@ if __name__ == "__main__":
     
     signal = signal.DMACrossOver()
     eaController = midEaController.eaController(signal)
-    eaController.runByPhase('2010-06-07 00:00:00', '2016-07-20 00:00:00', 1,True,False)
+    eaController.runByPhase('2010-06-07 00:00:00', '2016-07-20 00:00:00', 1,True,True)
     endRun = time.clock()
     print "run time: %f s" % (endRun - startRun)       
     sys.exit(app.exec_())  

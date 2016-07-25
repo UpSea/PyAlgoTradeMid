@@ -71,11 +71,13 @@ class midBaseStrategy(strategy.BacktestingStrategy):
         self.__long_exitBar_pnl = {}
         self.__long_position_volume = {}                #mid 当前持有头寸数量
         self.__long_position_cost = {}                  #mid 当前持有头寸开仓成本
-        self.__long_position_pnl = {}                   #mid 当前持有头寸价值        
+        self.__long_position_currentBar_pnl = {}        #mid 当前持有头寸价值  
+        self.__long_position_pnl = {}
         self.__short_exitBar_pnl = {}
         self.__short_position_volume = {}               #mid 当前持有头寸数量
         self.__short_position_cost = {}                 #mid 当前持有头寸开仓成本
-        self.__short_position_pnl = {}                  #mid 当前持有头寸价值
+        self.__short_position_currentBar_pnl = {}       #mid 当前持有头寸价值
+        self.__short_position_pnl = {}
         
         self.__position_cumulativePNL = {}              #mid 当前 symbol 持有头寸cumulative pnl 价值
         self.__buy = {}
@@ -105,8 +107,10 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.__short_position_volume[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)       #mid 当前持有头寸数量
             self.__long_position_cost[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)         #mid 当前持有头寸开仓成本
             self.__short_position_cost[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)         #mid 当前持有头寸开仓成本
-            self.__long_position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
-            self.__short_position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
+            self.__long_position_currentBar_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
+            self.__short_position_currentBar_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)          #mid 当前持有头寸价值
+            self.__short_position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN) 
+            self.__long_position_pnl[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN) 
             self.__position_cumulativePNL[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
             self.__buy[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN)
             self.__sell[instrument] = SequenceDataSeries(maxLen = mid_DEFAULT_MAX_LEN) 
@@ -238,23 +242,24 @@ class midBaseStrategy(strategy.BacktestingStrategy):
                     self.__lastShortPnl = shortPnl
                     
             if(self.__long_exitBar_pnl[instrument]):
-                self.__long_position_pnl[instrument].appendWithDateTime(currentTime,self.__long_exitBar_pnl[instrument])  
+                self.__long_position_currentBar_pnl[instrument].appendWithDateTime(currentTime,self.__long_exitBar_pnl[instrument])  
                 self.__long_exitBar_pnl[instrument] = None
             else:
-                self.__long_position_pnl[instrument].appendWithDateTime(currentTime,longStandingCurBarPnl)  
+                self.__long_position_currentBar_pnl[instrument].appendWithDateTime(currentTime,longStandingCurBarPnl)  
                 
             if(self.__short_exitBar_pnl[instrument]):
-                self.__short_position_pnl[instrument].appendWithDateTime(currentTime,self.__short_exitBar_pnl[instrument])  
+                self.__short_position_currentBar_pnl[instrument].appendWithDateTime(currentTime,self.__short_exitBar_pnl[instrument])  
                 self.__short_exitBar_pnl[instrument] = None
             else:
-                self.__short_position_pnl[instrument].appendWithDateTime(currentTime,shortStandingCurBarPnl)   
+                self.__short_position_currentBar_pnl[instrument].appendWithDateTime(currentTime,shortStandingCurBarPnl)   
                 
                 
             #self.__short_position_pnl[instrument].appendWithDateTime(currentTime,shortCurBarPnl)            
                 
                 
-                
-                
+            self.__long_position_pnl[instrument].appendWithDateTime(currentTime,longPnl)
+            self.__short_position_pnl[instrument].appendWithDateTime(currentTime,shortPnl)
+            
             self.__long_position_cost[instrument].appendWithDateTime(currentTime,longCost)
             self.__short_position_cost[instrument].appendWithDateTime(currentTime,shortCost)
             
@@ -264,8 +269,8 @@ class midBaseStrategy(strategy.BacktestingStrategy):
             self.__sell[instrument].appendWithDateTime(currentTime,self.sellSignal[instrument])        
             
             cumulativePNL = 0
-            longCurBarPnl = self.__long_position_pnl[instrument][-1]
-            shortCurBarPnl = self.__short_position_pnl[instrument][-1]
+            longCurBarPnl = self.__long_position_currentBar_pnl[instrument][-1]
+            shortCurBarPnl = self.__short_position_currentBar_pnl[instrument][-1]
             currentBarPnl = longCurBarPnl + shortCurBarPnl
             
             if(len(self.__position_cumulativePNL[instrument])>0):
@@ -554,13 +559,17 @@ class midBaseStrategy(strategy.BacktestingStrategy):
 
             position_value = self.getPositionValue(instrument)
             long_volume = self.getLongVolume(instrument)
+            short_volume = self.getShortVolume(instrument)
             long_cost = self.getLongCost(instrument)
             long_pnl = self.getLongPnl(instrument)
-
-            self.results[instrument] = pd.DataFrame({'long_volume':list(long_volume),'long_cost':list(long_cost),
-                               'long_pnl':list(long_pnl),
+            short_cost = self.getShortCost(instrument)
+            short_pnl = self.getShortPnl(instrument)
+            
+            self.results[instrument] = pd.DataFrame({'long_volume':list(long_volume),
+                                'long_cost':list(long_cost),'long_pnl':list(long_pnl),
+                                'short_cost':list(short_cost),'short_pnl':list(short_pnl),
                                'buy':list(buy),'sell':list(sell),'position_value':list(position_value)},
-                              columns=['long_volume','long_cost','long_pnl','buy','sell','position_value'],
+                              columns=['long_volume','long_cost','long_pnl','short_cost','short_pnl','buy','sell','position_value'],
                               index=long_volume.getDateTimes())
             self.addIndicators(instrument)
             #------------------------------------
